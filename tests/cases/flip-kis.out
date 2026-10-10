@@ -1,0 +1,44 @@
+line 1
+shape
+vertices 14
+v -1.0 -1.0 -1.0
+v -1.0 -1.0 1.0
+v -1.0 1.0 -1.0
+v -1.0 1.0 1.0
+v 1.0 -1.0 -1.0
+v 1.0 -1.0 1.0
+v 1.0 1.0 -1.0
+v 1.0 1.0 1.0
+v -1.0 0.0 0.0
+v 1.0 0.0 0.0
+v 0.0 -1.0 0.0
+v 0.0 1.0 0.0
+v 0.0 0.0 -1.0
+v 0.0 0.0 1.0
+faces 24
+f flip 2 - : 8 0 10
+f flip 2 - : 8 1 13
+f flip 2 - : 8 3 11
+f flip 2 - : 8 2 12
+f flip 2 - : 9 4 12
+f flip 2 - : 9 6 11
+f flip 2 - : 9 7 13
+f flip 2 - : 9 5 10
+f flip 2 - : 10 0 12
+f flip 2 - : 10 4 9
+f flip 2 - : 10 5 13
+f flip 2 - : 10 1 8
+f flip 2 - : 11 2 8
+f flip 2 - : 11 3 13
+f flip 2 - : 11 7 9
+f flip 2 - : 11 6 12
+f flip 2 - : 12 0 8
+f flip 2 - : 12 2 11
+f flip 2 - : 12 6 9
+f flip 2 - : 12 4 10
+f flip 2 - : 13 1 10
+f flip 2 - : 13 5 9
+f flip 2 - : 13 7 11
+f flip 2 - : 13 3 8
+skipped 0
+end

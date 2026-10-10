@@ -1,0 +1,4 @@
+roof = k[top](0.8)
+storey = x[inner](1.2) i[top](0.3)
+roof storey x[+z] C
+storey

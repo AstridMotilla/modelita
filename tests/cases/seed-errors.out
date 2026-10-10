@@ -1,0 +1,12 @@
+line 1
+error range
+end
+line 2
+error range
+end
+line 3
+error arity
+end
+line 4
+error syntax
+end

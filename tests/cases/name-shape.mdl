@@ -1,0 +1,4 @@
+; a name for a shape
+house = k[top](0.9) x[+z](0.6) C
+house
+k[top] house

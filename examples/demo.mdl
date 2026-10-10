@@ -1,0 +1,23 @@
+; The words from the local-ops demo, in Modelita. Run:
+;   racket racket/cli.rkt examples/demo.mdl
+
+; Named shapes
+l-shape = x[+x&side] x[+z] C
+house   = k[top](0.9) x[+z](0.6) C
+cup     = x[inner](-1.6) i[+z](0.2) C
+ring    = h[inner] i[+x|-x](0.3) x[+x](1) x[-x](1) C
+
+; Reusable steps, one with a parameter
+storey(h) = x[inner](h) i[top](0.3)
+roof      = k[top](0.8)
+
+; Labels name the parts a step makes, and stay on what is built from them
+tower = roof storey(1.2)^3 x[+z]{tower} C
+x[tower&side](0.2) tower
+
+; Conway's letters: with no selector they are the standard operators
+t I                         ; truncated icosahedron: a football
+s C                         ; snub cube
+d[top] x[+z] C              ; ... and with one they act on part of the shape
+
+export "tower.obj" tower

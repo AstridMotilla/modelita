@@ -1,0 +1,36 @@
+line 1
+shape
+vertices 16
+v -1.0 -1.0 -1.0
+v -1.0 -1.0 1.0
+v -1.0 1.0 -1.0
+v -1.0 1.0 1.0
+v 1.0 -1.0 -1.0
+v 1.0 -1.0 1.0
+v 1.0 1.0 -1.0
+v 1.0 1.0 1.0
+v -1.0 -1.0 2.0
+v 1.0 -1.0 2.0
+v 1.0 1.0 2.0
+v -1.0 1.0 2.0
+v -1.0 -1.0 3.0
+v 1.0 -1.0 3.0
+v 1.0 1.0 3.0
+v -1.0 1.0 3.0
+faces 14
+f seed 0 - : 0 1 3 2
+f seed 0 - : 4 6 7 5
+f seed 0 - : 0 4 5 1
+f seed 0 - : 2 3 7 6
+f seed 0 - : 0 2 6 4
+f side 1 floor : 1 5 9 8
+f side 1 floor : 5 7 10 9
+f side 1 floor : 7 3 11 10
+f side 1 floor : 3 1 8 11
+f side 2 floor : 8 9 13 12
+f side 2 floor : 9 10 14 13
+f side 2 floor : 10 11 15 14
+f side 2 floor : 11 8 12 15
+f top 2 floor : 12 13 14 15
+skipped 0
+end

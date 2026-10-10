@@ -1,0 +1,10 @@
+x = C
+C = x C
+foo C
+house = C
+house = T
+y C
+storey(h) = x(h)
+storey C
+storey(1, 2) C
+wall = x(q) C

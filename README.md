@@ -2,6 +2,9 @@
 
 A small language for building polyhedral shapes, one local step at a time.
 
+**Try it:** [modelita.vercel.app](https://modelita.vercel.app), the playground,
+running the C implementation as WebAssembly.
+
 ```
 k[top](0.8) storey(1.2)^3 x[+z]{tower} C
 ```

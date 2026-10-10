@@ -561,8 +561,14 @@ function saveToHash() {
 }
 
 document.getElementById("share").addEventListener("click", async () => {
+  // The link holds the whole program. Phones get their share sheet; elsewhere it's copied.
   const url = location.href.split("#")[0] + "#" + await encode(textarea.value);
   try { history.replaceState(null, "", url); } catch {}
+  const shared = { title: "Modelita", text: wordEl.textContent || "A Modelita program", url };
+  if (matchMedia("(pointer: coarse)").matches && navigator.canShare?.(shared)) {
+    try { await navigator.share(shared); return; }
+    catch (e) { if (e.name === "AbortError") return; }      // closing the sheet isn't an error
+  }
   try { await navigator.clipboard.writeText(url); toast("Link copied: it holds the whole program"); }
   catch { toast("Copy the address from the address bar: it holds the whole program"); }
 });
@@ -579,13 +585,6 @@ function shapeToObj(r) {
   });
   return lines.join("\n") + "\n";
 }
-
-document.getElementById("copy-obj").addEventListener("click", async () => {
-  const r = state.shape;
-  if (!r) return toast("There's no shape on this line to copy");
-  try { await navigator.clipboard.writeText(shapeToObj(r)); toast(`Copied ${r.faces.length} faces as OBJ`); }
-  catch { toast("This browser didn't allow copying; use Download OBJ"); }
-});
 
 document.getElementById("download-obj").addEventListener("click", () => {
   const r = state.shape;

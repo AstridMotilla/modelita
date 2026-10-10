@@ -63,6 +63,7 @@ header {
   padding: 6px 11px; cursor: pointer; white-space: nowrap;
 }
 .btn:hover { border-color: var(--accent); }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 600; }
 select.btn { padding-right: 8px; }
 

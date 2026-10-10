@@ -23,13 +23,16 @@ anywhere.
 | [`SPEC.md`](SPEC.md) | the language, precisely enough to implement from |
 | [`tests/`](tests/) | the conformance suite: programs and the dumps they must produce, plus a runner that works with any implementation |
 | [`racket/`](racket/) | the reference implementation |
+| [`c/`](c/) | the whole language in one C99 header, `modelita.h`, plus a command-line tool |
 
 ## Try it
 
 ```sh
-racket racket/cli.rkt -e "k[top](0.9) x[+z](0.6) C"     # the dump of one word
-racket racket/cli.rkt house.mdl                         # a program; export lines write .obj files
-python3 tests/run.py -- racket racket/cli.rkt           # the conformance suite
+make -C c                                        # build the C version
+c/modelita -e "k[top](0.9) x[+z](0.6) C"         # the dump of one word
+c/modelita examples/demo.mdl                     # a program; export lines write .obj files
+python3 tests/run.py -- c/modelita               # the conformance suite
+python3 tests/run.py -- racket racket/cli.rkt    # ... against the Racket reference
 ```
 
 ## Writing an implementation
@@ -41,11 +44,12 @@ python3 tests/run.py -- racket racket/cli.rkt           # the conformance suite
 
 ## Status
 
-Draft 1 of the spec. Planned next:
+Draft 1 of the spec, with two implementations (Racket and C) that pass the
+same suite. They also agree on thousands of randomly generated words.
+Planned next:
 
-- a single-header C implementation, so that any language can call it
-  through bindings, and WASM can run it in the browser;
-- a web playground where the word lives in the URL;
+- the C header compiled to WASM, for a web playground where the word lives
+  in the URL;
 - a one-page cheatsheet.
 
 The DrRacket `#lang` and the studio from `local-ops` will be moved over on

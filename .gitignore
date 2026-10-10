@@ -1,2 +1,4 @@
 compiled/
 *.obj
+__pycache__/
+c/modelita

@@ -37,6 +37,7 @@ root serves `web/site/` with no build step.
 | `site/lang.js` | what the page knows about Modelita text: line kinds, tokens, steps, links |
 | `site/modelita.js`, `modelita.wasm` | the engine: `modelita_web.c` + `../c/modelita.h` built with Emscripten |
 | `site/og.png`, `favicon.svg` | the link preview and the tab icon |
+| `og.svg` | the link preview's source: export it to `site/og.png` with `inkscape og.svg --export-type=png --export-filename=site/og.png` (needs the Archivo and DM Mono fonts installed) |
 | `modelita_web.c` | runs a program and returns the results as JSON |
 | `dump.mjs` | the conformance dump from the engine: `python3 tests/run.py -- node web/dump.mjs` |
 | `check-page.mjs` | `lang.js` against the engine: every example, every step, link round trips |

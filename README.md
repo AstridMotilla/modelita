@@ -1,6 +1,6 @@
 # Modelita
 
-A small language for building polyhedral shapes, one local step at a time.
+A little language for shapes.
 
 **Try it:** [modelita.vercel.app](https://modelita.vercel.app), the playground,
 running the C implementation as WebAssembly.

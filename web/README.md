@@ -23,9 +23,10 @@ root serves `web/site/` with no build step.
   is shown on `x[+z] C`.
 - **Colour by**: role, label or step. Hover a legend entry to pick out
   those faces.
-- **Copy link**: the whole program travels in the link (deflated, then
-  base64url, after `#`, so it never reaches the server). **Copy OBJ** and
-  **Download OBJ** give the shown shape, y up.
+- **Share**: the whole program travels in the link (deflated, then
+  base64url, after `#`, so it never reaches the server). Phones get their
+  share sheet; elsewhere the link is copied. **Download OBJ** saves the
+  shown shape, y up.
 
 ## Files
 

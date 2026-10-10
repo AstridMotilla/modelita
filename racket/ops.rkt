@@ -250,7 +250,7 @@
                 [ring (in-value (ring-around v around faces owner))]
                 [full? (in-value (for/and ([i ring]) (vector-ref picked i)))]
                 [fan (picked-fans ring picked)]
-                #:when (or full? (>= (length fan) 2)))
+                #:when (if full? (>= (length fan) 3) (>= (length fan) 2)))
       ;; The ring runs clockwise seen from outside; faces run counterclockwise.
       (define centres (reverse (for/list ([i fan]) (hash-ref centre i))))
       (face (if full? centres (cons v centres)) 'vertex
@@ -328,7 +328,10 @@
   (define around (faces-around s))
   (define faces (list->vector (shape-faces s)))
   (define corner-faces
-    (for/list ([w (sort (set->list corners) <)])
+    (for*/list ([w (sort (set->list corners) <)]
+                ;; A corner where only two faces meet would leave a two-sided face; its two
+                ;; faces share that edge instead.
+                #:when (>= (length (vector-ref around w)) 3))
       (define ring (hash-ref next w))
       (define start (apply min (hash-keys ring)))
       (define corners-of-face
@@ -416,6 +419,9 @@
   (define-values (fa fb) (values (first chosen) (second chosen)))
   (when (for/or ([v (face-corners fa)]) (memv v (face-corners fb)))
     (fail 'precondition "bridge: the two faces touch, so a tube between them would cross itself"))
+  (define joined (for*/set ([f (shape-faces s)] [e (pairs (face-corners f))]) e))
+  (when (for*/or ([v (face-corners fa)] [w (face-corners fb)]) (set-member? joined (cons v w)))
+    (fail 'precondition "bridge: an edge already joins the two faces, so a tube would run along it"))
   (define a (list->vector (face-corners fa)))
   (define b (list->vector (reverse (face-corners fb))))
   (define n (vector-length a))

@@ -56,7 +56,11 @@ def main():
     failed = 0
     cases = sorted(p for p in CASES.glob("*.mdl") if args.k in p.stem)
     for case in cases:
-        run = subprocess.run(args.command + [str(case)], capture_output=True, text=True)
+        try:
+            run = subprocess.run(args.command + [str(case)], capture_output=True, text=True)
+        except OSError as e:
+            print(f"can't run {' '.join(args.command)}: {e}")
+            return 2
         expected_file = case.with_suffix(".out")
         if args.write:
             expected_file.write_text(run.stdout)

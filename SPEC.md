@@ -259,8 +259,9 @@ vertex `a = c + height·N`. Made: `vᵢ, vᵢ₊₁, a` for each i (role `tent`)
 With height 0 this is Conway's `k`.
 
 **bridge** — The selector must pick exactly two faces, `A` then `B` in
-face order. They must have the same number of corners `n` and no corner in
-common. Otherwise it is a `precondition` error. Let `a = A`, and `b` =
+face order. They must have the same number of corners `n`, no corner in
+common, and no edge joining a corner of A to a corner of B (the tube would
+run along it). Otherwise it is a `precondition` error. Let `a = A`, and `b` =
 `B`'s corners reversed. Choose the turn `k` in 0 … n−1 that minimises
 `Σᵢ |p(aᵢ) − p(b₍ᵢ₊ₖ₎ mod n)|²`, taking the smallest k on a tie, and let
 `cᵢ = b₍ᵢ₊ₖ₎ mod n`. A and B are removed. Made: `aᵢ, aᵢ₊₁, cᵢ₊₁, cᵢ` for
@@ -346,11 +347,15 @@ is replaced by `cut(w, previous corner), cut(w, next corner)`, and then
 consecutive repeats are removed all the way round. Faces that changed were
 picked, so they count as made by this step (§4).
 
-Then, for each picked corner `w` in increasing order, add a face (role
-`vertex`, labels shared by the faces around `w`). Its corners: in each
-face around `w`, the corner was replaced by `a, b`, which links `b` to
-`a`. Start from the lowest-numbered of these cut points and follow the
-links until returning to the start.
+Then, for each picked corner `w` in increasing order where at least three
+faces meet, add a face (role `vertex`, labels shared by the faces around
+`w`). Its corners: in each face around `w`, the corner was replaced by
+`a, b`, which links `b` to `a`. Start from the lowest-numbered of these cut
+points and follow the links until returning to the start.
+
+A corner where only two faces meet (a partial `g` leaves such corners)
+gets no face, because it would have only two sides. Its two faces already
+share the edge between its cut points.
 
 The fraction must be above 0 and at most 0.5, otherwise it is a `range`
 error.
@@ -363,8 +368,10 @@ error.
    labels of that face).
 3. **Corner faces**: for each vertex `v` in order that is used by a picked
    face, and each fan of its ring in order. A full ring (every face
-   picked) gives the fan's centres in *reverse* fan order. A partial fan
-   of 2 or more faces gives `v` followed by the fan's centres in reverse
+   picked) of 3 or more faces gives the fan's centres in *reverse* fan
+   order. A full ring of 2 faces gives nothing: its two faces' corner
+   faces already share the edge between their centres. A partial fan of
+   2 or more faces gives `v` followed by the fan's centres in reverse
    order. Partial fans of one face give nothing. Role `vertex`, labels
    shared by the fan's faces.
 

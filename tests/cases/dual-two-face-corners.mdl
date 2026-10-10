@@ -1,0 +1,3 @@
+; a partial gyro leaves corners where only two faces meet
+d g[+z] C
+n[face] a[~n3|-x] d g[~#0] T

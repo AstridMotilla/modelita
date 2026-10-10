@@ -24,6 +24,7 @@ anywhere.
 | [`tests/`](tests/) | the conformance suite: programs and the dumps they must produce, plus a runner that works with any implementation |
 | [`racket/`](racket/) | the reference implementation |
 | [`c/`](c/) | the whole language in one C99 header, `modelita.h`, plus a command-line tool |
+| [`web/`](web/) | the playground: an editor and 3D view running the C header as WebAssembly |
 
 ## Try it
 
@@ -33,6 +34,7 @@ c/modelita -e "k[top](0.9) x[+z](0.6) C"         # the dump of one word
 c/modelita examples/demo.mdl                     # a program; export lines write .obj files
 python3 tests/run.py -- c/modelita               # the conformance suite
 python3 tests/run.py -- racket racket/cli.rkt    # ... against the Racket reference
+make -C web serve                                # the playground, at http://localhost:8642
 ```
 
 ## Writing an implementation
@@ -45,12 +47,11 @@ python3 tests/run.py -- racket racket/cli.rkt    # ... against the Racket refere
 ## Status
 
 Draft 1 of the spec, with two implementations (Racket and C) that pass the
-same suite. They also agree on thousands of randomly generated words.
+same suite, and the C one also passes it compiled to WebAssembly. They also agree on thousands of randomly generated words.
 Planned next:
 
-- the C header compiled to WASM, for a web playground where the word lives
-  in the URL;
-- a one-page cheatsheet.
+- a one-page cheatsheet;
+- bindings for other languages, starting with Python.
 
 The DrRacket `#lang` and the studio from `local-ops` will be moved over on
 top of `racket/`.

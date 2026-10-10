@@ -165,8 +165,11 @@ static void mdl__grow(mdl__arena *a, void **items, int *cap, size_t size) {
 
 /* --- errors ------------------------------------------------------------------ */
 
+/* A context lives on the heap: after a longjmp, the C standard leaves
+   locals changed since setjmp indeterminate, but not memory they point to. */
 typedef struct {
     mdl__arena *a;          /* where this statement's work goes */
+    mdl__arena work;        /* the statement's own arena */
     jmp_buf *jump;
     mdl_status status;
     char message[256];
@@ -1875,24 +1878,34 @@ const char *mdl_face_label(const mdl_shape *s, int i, int k) { return s->labels[
 
 /* --- running -------------------------------------------------------------------------------------------- */
 
+static mdl__ctx *mdl__ctx_new(jmp_buf *jump) {
+    mdl__ctx *x = (mdl__ctx *)calloc(1, sizeof *x);
+    if (!x) { fputs("modelita: out of memory\n", stderr); abort(); }
+    x->a = &x->work;
+    x->jump = jump;
+    return x;
+}
+
+static void mdl__ctx_free(mdl__ctx *x) {
+    mdl__arena_free(&x->work);
+    free(x);
+}
+
 mdl_shape *mdl_word(const char *word, mdl_error *error) {
-    mdl__arena arena = {0};
     jmp_buf jump;
-    mdl__ctx x;
-    memset(&x, 0, sizeof x);
-    x.a = &arena; x.jump = &jump;
+    mdl__ctx *const x = mdl__ctx_new(&jump);
     mdl_shape *volatile r = NULL;                /* set after setjmp, read after a jump */
     if (error) { error->status = MDL_OK; error->line = 0; error->message[0] = 0; }
     if (!setjmp(jump)) {
-        mdl__word_ast w = mdl__parse_word(&x, word);
-        mdl__value v = mdl__eval_word(&x, NULL, &w, NULL);
-        if (!v.shape) mdl__fail(&x, MDL_ERR_KIND, "this word is an operator, not a shape: it needs a seed at the end");
+        mdl__word_ast w = mdl__parse_word(x, word);
+        mdl__value v = mdl__eval_word(x, NULL, &w, NULL);
+        if (!v.shape) mdl__fail(x, MDL_ERR_KIND, "this word is an operator, not a shape: it needs a seed at the end");
         r = mdl__export(v.shape);
     } else if (error) {
-        error->status = x.status;
-        snprintf(error->message, sizeof error->message, "%s", x.message);
+        error->status = x->status;
+        snprintf(error->message, sizeof error->message, "%s", x->message);
     }
-    mdl__arena_free(&arena);
+    mdl__ctx_free(x);
     return r;
 }
 
@@ -1931,51 +1944,48 @@ static void mdl__count_failure(const mdl_result *r, void *user) {
 }
 
 static void mdl__run_line(mdl__program *pg, const char *line, int lineno, mdl_result_fn fn, void *user, int *failed) {
-    mdl__arena work = {0};
     jmp_buf jump;
-    mdl__ctx x;
-    memset(&x, 0, sizeof x);
-    x.jump = &jump;
+    mdl__ctx *const x = mdl__ctx_new(&jump);
     /* set after setjmp and read after a jump, so volatile */
     volatile int kind = MDL_SHOW, report = 0, is_operator = 0;
     const char *volatile file = NULL;
     mdl_shape *volatile shown = NULL;
     if (!setjmp(jump)) {
         mdl__stmt st;
-        x.a = pg->program;                       /* what is read outlives the line */
-        if (!mdl__parse_line(&x, line, &st)) { mdl__arena_free(&work); return; }
-        x.a = &work;
+        x->a = pg->program;                       /* what is read outlives the line */
+        if (!mdl__parse_line(x, line, &st)) { mdl__ctx_free(x); return; }
+        x->a = &x->work;
         kind = st.kind;
         file = st.file;
         switch (st.kind) {
         case MDL_DEFINE: {
-            if (mdl__reserved(st.name)) mdl__fail(&x, MDL_ERR_NAME, "%s is reserved: it is an operator, a letter or a seed", st.name);
+            if (mdl__reserved(st.name)) mdl__fail(x, MDL_ERR_NAME, "%s is reserved: it is an operator, a letter or a seed", st.name);
             for (int i = 0; i < pg->env.n; i++)
-                if (!strcmp(pg->env.items[i].name, st.name)) mdl__fail(&x, MDL_ERR_NAME, "%s is already defined", st.name);
+                if (!strcmp(pg->env.items[i].name, st.name)) mdl__fail(x, MDL_ERR_NAME, "%s is already defined", st.name);
             /* run it once now, so a broken definition is reported here */
-            if (!st.nparams) mdl__eval_word(&x, &pg->env, &st.word, NULL);
+            if (!st.nparams) mdl__eval_word(x, &pg->env, &st.word, NULL);
             mdl__def d = {st.name, st.params, st.nparams, st.word};
             MDL__PUSH(pg->program, pg->env, d);
             break;
         }
         case MDL_SHOW: case MDL_EXPORT: {
-            mdl__value v = mdl__eval_word(&x, &pg->env, &st.word, NULL);
+            mdl__value v = mdl__eval_word(x, &pg->env, &st.word, NULL);
             if (v.shape) shown = mdl__export(v.shape);
             is_operator = v.op != NULL;
             report = 1;
             break;
         }
         case MDL_USE: {
-            if (pg->depth > 16) mdl__fail(&x, MDL_ERR_NAME, "use: files use each other too deeply");
+            if (pg->depth > 16) mdl__fail(x, MDL_ERR_NAME, "use: files use each other too deeply");
             const char *path = mdl__beside(pg->program, pg->path, st.file);
             char *text = mdl__read_file(path);
-            if (!text) mdl__fail(&x, MDL_ERR_NAME, "use: can't read %s", path);
+            if (!text) mdl__fail(x, MDL_ERR_NAME, "use: can't read %s", path);
             /* its own run first, to report its errors here; then its definitions */
             mdl__program other = {pg->program, {0, 0, 0}, path, pg->depth + 1};
             int bad = 0;
             mdl__run_text(&other, text, mdl__count_failure, &bad, NULL);
             free(text);
-            if (bad) mdl__fail(&x, MDL_ERR_NAME, "%s, line %d has an error", st.file, bad);
+            if (bad) mdl__fail(x, MDL_ERR_NAME, "%s, line %d has an error", st.file, bad);
             for (int i = 0; i < other.env.n; i++) MDL__PUSH(pg->program, pg->env, other.env.items[i]);
             break;
         }
@@ -1993,15 +2003,15 @@ static void mdl__run_line(mdl__program *pg, const char *line, int lineno, mdl_re
     r.file = file;
     r.shape = shown;
     r.is_operator = is_operator;
-    r.skipped = x.skips;
-    r.error.status = x.status;
-    if (x.status != MDL_OK) {
+    r.skipped = x->skips;
+    r.error.status = x->status;
+    if (x->status != MDL_OK) {
         r.error.line = lineno;
-        snprintf(r.error.message, sizeof r.error.message, "%s", x.message);
+        snprintf(r.error.message, sizeof r.error.message, "%s", x->message);
     }
     if (report && fn) fn(&r, user);
     mdl_shape_free(shown);
-    mdl__arena_free(&work);
+    mdl__ctx_free(x);
 }
 
 static void mdl__run_text(mdl__program *pg, const char *text, mdl_result_fn fn, void *user, int *failed) {

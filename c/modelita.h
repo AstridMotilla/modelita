@@ -25,7 +25,8 @@
    There is no global state: each call allocates its own memory and frees
    it, so calls on different threads don't interfere.
 
-   License: see LICENSE in the Modelita repository. */
+   MIT License, Copyright (c) 2026 astridmotilla. See LICENSE in the
+   Modelita repository for the full text. */
 
 #ifndef MODELITA_H
 #define MODELITA_H

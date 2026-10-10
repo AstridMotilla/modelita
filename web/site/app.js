@@ -1,332 +1,6 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Modelita Playground</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=DM+Mono:wght@400;500&display=swap">
-<style>
-/* Layout: a workbench. The program sits on the left like a notebook margin;
-   the model stands on the stage at right, and the word's steps run along the
-   stage's foot, read right to left. Colours are the blog's: a night stage and
-   one hue per face role. */
-:root {
-  --bg: #eef1f1;
-  --panel: #fbfcfc;
-  --stage: #e3e8e8;
-  --line: #d3dada;
-  --fg: #1a1f20;
-  --muted: #5a6566;
-  --accent: #b5641c;
-  --accent-soft: #f3e2d2;
-  --error: #b3263a;
-  --ok: #2f7d55;
-  --edge: #273031;
-  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --code-size: 13px;
-  --code-line: 21px;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #1b1e1f; --panel: #222627; --stage: #1e2122; --line: #333a3b; --fg: #e2e6e5;
-    --muted: #96a1a0; --accent: #e5904a; --accent-soft: #3a2c20; --error: #f07080; --ok: #6cc896;
-    --edge: #1e2122; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #1b1e1f; --panel: #222627; --stage: #1e2122; --line: #333a3b; --fg: #e2e6e5;
-  --muted: #96a1a0; --accent: #e5904a; --accent-soft: #3a2c20; --error: #f07080; --ok: #6cc896;
-  --edge: #1e2122; color-scheme: dark;
-}
-
-html, body { height: 100%; }
-body {
-  margin: 0; background: var(--bg); color: var(--fg);
-  font: 14px/1.45 var(--body);
-  display: flex; flex-direction: column;
-}
-button, select, input, textarea { font: inherit; color: inherit; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-/* --- header ------------------------------------------------------------------ */
-header {
-  display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap;
-  padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
-}
-.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
-.brand h1 {
-  margin: 0; font: 760 22px/1 var(--display); font-stretch: 118%; letter-spacing: -0.01em;
-}
-.brand .tag { font: 12px var(--mono); color: var(--muted); }
-.engine { font: 12px var(--mono); color: var(--muted); display: flex; align-items: center; gap: 6px; }
-.engine::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
-.engine[data-state="ready"]::before { background: var(--ok); }
-.engine[data-state="failed"]::before { background: var(--error); }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn {
-  border: 1px solid var(--line); background: var(--bg); border-radius: 6px;
-  padding: 6px 11px; cursor: pointer; white-space: nowrap;
-}
-.btn:hover { border-color: var(--accent); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 600; }
-select.btn { padding-right: 8px; }
-
-/* --- the bench ---------------------------------------------------------------- */
-main {
-  flex: 1; min-height: 0;
-  display: grid; grid-template-columns: minmax(320px, 40%) 1fr;
-}
-.side { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--line); background: var(--panel); }
-
-.editor { position: relative; flex: 1 1 55%; min-height: 220px; display: flex; overflow: hidden; border-bottom: 1px solid var(--line); }
-.gutter {
-  flex: none; width: 46px; overflow: hidden; padding-block: 10px;
-  font: var(--code-size)/var(--code-line) var(--mono); color: var(--muted);
-  border-right: 1px solid var(--line); user-select: none; font-variant-numeric: tabular-nums;
-}
-.gutter div { height: var(--code-line); display: flex; justify-content: space-between; padding-inline: 6px 6px; }
-.gutter .mark { width: 8px; text-align: center; }
-.gutter .error .mark { color: var(--error); }
-.gutter .shape .mark { color: var(--ok); }
-.gutter .define .mark, .gutter .operator .mark { color: var(--muted); }
-.code { position: relative; flex: 1; min-width: 0; }
-.focus-bar {
-  position: absolute; left: 0; right: 0; height: var(--code-line); background: var(--accent-soft);
-  pointer-events: none; transform: translateY(0);
-}
-textarea#program {
-  position: absolute; inset: 0; width: 100%; height: 100%; resize: none; border: 0; margin: 0;
-  padding: 10px 12px; background: transparent; outline: none; white-space: pre; overflow: auto;
-  font: var(--code-size)/var(--code-line) var(--mono); tab-size: 2; caret-color: var(--accent);
-}
-
-.notes { flex: 0 1 auto; max-height: 30%; overflow: auto; padding: 10px 14px; border-bottom: 1px solid var(--line); }
-.notes:empty { display: none; }
-.note { display: flex; gap: 10px; font-size: 13px; cursor: pointer; padding: 3px 0; }
-.note b { font: 500 12px var(--mono); color: var(--error); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.note span { min-width: 0; }
-.note .cat { font: 12px var(--mono); color: var(--muted); }
-
-details.reference { flex: 0 1 auto; overflow: auto; max-height: 45%; }
-details.reference > summary {
-  cursor: pointer; padding: 10px 14px; font: 600 12px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
-}
-.ref { padding: 0 14px 14px; display: grid; gap: 14px; }
-.ref h3 { margin: 0 0 4px; font: 600 12px var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.ref table { border-collapse: collapse; width: 100%; font-size: 13px; }
-.ref td { padding: 3px 8px 3px 0; vertical-align: top; border-top: 1px solid var(--line); }
-.ref td:first-child { font-family: var(--mono); white-space: nowrap; width: 1%; }
-.ref .scroll { overflow-x: auto; }
-
-/* --- the stage ---------------------------------------------------------------- */
-.stage { position: relative; min-width: 0; min-height: 0; background: var(--stage); display: flex; flex-direction: column; }
-.canvas-wrap { position: relative; flex: 1; min-height: 0; touch-action: none; cursor: grab; }
-.canvas-wrap:active { cursor: grabbing; }
-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.overlay { position: absolute; pointer-events: none; }
-.word-title { top: 14px; left: 16px; right: 16px; display: grid; gap: 4px; }
-.word-title .word { font: 500 15px/1.35 var(--mono); overflow-wrap: anywhere; }
-.word-title .sub { font-size: 12px; color: var(--muted); }
-.counts {
-  top: 14px; right: 16px; font: 12px var(--mono); color: var(--muted); text-align: right;
-  font-variant-numeric: tabular-nums; display: grid; gap: 2px;
-}
-.word-title { right: 190px; }
-.message {
-  inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted);
-}
-.message p { max-width: 42ch; margin: 0; }
-.message .err { color: var(--error); font-family: var(--mono); font-size: 13px; }
-.tip {
-  position: absolute; pointer-events: none; padding: 6px 9px; border-radius: 6px; background: var(--panel);
-  border: 1px solid var(--line); font: 12px/1.4 var(--mono); white-space: nowrap; transform: translate(12px, 12px);
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
-}
-
-.foot { border-top: 1px solid var(--line); padding: 10px 16px 12px; display: grid; gap: 10px; background: var(--panel); }
-.steps-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.steps-label { font: 600 11px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
-.steps { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; min-width: 0; direction: ltr; }
-.chip {
-  border: 1px solid var(--line); background: var(--bg); border-radius: 5px; padding: 4px 8px; cursor: pointer;
-  font: 13px var(--mono); white-space: nowrap;
-}
-.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
-.chip.pending { opacity: 0.45; }
-.chip.failed { border-color: var(--error); color: var(--error); }
-.view-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-.seg button { border: 0; background: var(--bg); padding: 4px 10px; cursor: pointer; font-size: 13px; }
-.seg button + button { border-left: 1px solid var(--line); }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--panel); font-weight: 600; }
-.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 12px var(--mono); min-width: 0; }
-.legend span { display: inline-flex; align-items: center; gap: 5px; cursor: default; }
-.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-
-.toast {
-  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-  background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px;
-}
-
-@media (max-width: 760px) {
-  body { height: auto; }
-  main { grid-template-columns: 1fr; }
-  .stage { order: -1; height: 72vh; min-height: 380px; }
-  .side { border-right: 0; }
-  .editor { min-height: 300px; }
-  .notes, details.reference { max-height: none; }
-  .word-title { right: 16px; top: 46px; }
-}
-@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
-</style>
-</head>
-<body>
-<header>
-  <div class="brand">
-    <h1>Modelita</h1>
-    <span class="tag">shapes, one local step at a time</span>
-  </div>
-  <span class="engine" id="engine" data-state="loading">loading engine</span>
-  <div class="actions">
-    <select class="btn" id="examples" aria-label="Load an example"></select>
-    <button class="btn" id="copy-obj" type="button">Copy OBJ</button>
-    <button class="btn primary" id="share" type="button">Copy link</button>
-  </div>
-</header>
-
-<main>
-  <section class="side" aria-label="Program">
-    <div class="editor">
-      <div class="gutter" id="gutter" aria-hidden="true"></div>
-      <div class="code">
-        <div class="focus-bar" id="focus-bar"></div>
-        <textarea id="program" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Modelita program"></textarea>
-      </div>
-    </div>
-    <div class="notes" id="notes" aria-live="polite"></div>
-    <details class="reference" id="reference" open>
-      <summary>Reference</summary>
-      <div class="ref">
-        <div>
-          <h3>Words</h3>
-          <div class="scroll"><table>
-            <tr><td>x[+z](0.6) C</td><td>Read right to left: a cube, then its +z face extruded 0.6.</td></tr>
-            <tr><td>name = word</td><td>A name for a shape, or for steps if the word has no seed.</td></tr>
-            <tr><td>name(h) = word</td><td>Steps with a number parameter, used as <code>name(1.2)</code>.</td></tr>
-            <tr><td>step^3</td><td>Repeat a step.</td></tr>
-            <tr><td>x[+z]{roof}</td><td>Label every face the step makes; faces built from them keep it.</td></tr>
-          </table></div>
-        </div>
-        <div>
-          <h3>Seeds</h3>
-          <div class="scroll"><table>
-            <tr><td>C(w, d, h)</td><td>Box, 2 × 2 × 2 by default</td></tr>
-            <tr><td>T O I D</td><td>Tetrahedron, octahedron, icosahedron, dodecahedron</td></tr>
-            <tr><td>P5 A5 Y5</td><td>Prism, antiprism, pyramid with 5 sides; take <code>(r, h)</code></td></tr>
-          </table></div>
-        </div>
-        <div>
-          <h3>Modelling</h3>
-          <div class="scroll"><table>
-            <tr><td>x(1)</td><td>extrude each face; makes <code>top</code>, <code>side</code></td></tr>
-            <tr><td>lift(1)</td><td>extrude each connected region as one block</td></tr>
-            <tr><td>i(0.3)</td><td>inset; makes <code>inner</code>, <code>rim</code>; below 1</td></tr>
-            <tr><td>k(0)</td><td>kis: a tent on each face; makes <code>tent</code></td></tr>
-            <tr><td>h</td><td>bridge two faces with a tube: a handle</td></tr>
-            <tr><td>scale(0.5)</td><td>scale each region about its centre</td></tr>
-            <tr><td>push(0.5)</td><td>move faces along their normals</td></tr>
-            <tr><td>merge, flip</td><td>undo a kis; flip the edge between two triangles</td></tr>
-          </table></div>
-        </div>
-        <div>
-          <h3>Conway</h3>
-          <div class="scroll"><table>
-            <tr><td>d a t(0.3) g r</td><td>dual, ambo, truncate, gyro, reflect</td></tr>
-            <tr><td>n z j e o m b s</td><td>needle kd, zip dk, join da, expand aa, ortho daa, meta kda, bevel ta, snub dg</td></tr>
-          </table></div>
-        </div>
-        <div>
-          <h3>Selectors</h3>
-          <div class="scroll"><table>
-            <tr><td>+x -x +y -y +z -z</td><td>faces facing that way</td></tr>
-            <tr><td>top roof</td><td>a role, or a label</td></tr>
-            <tr><td>new</td><td>faces the previous step made</td></tr>
-            <tr><td>n4 #3</td><td>faces with 4 corners; face number 3</td></tr>
-            <tr><td>a&amp;b a|b !a ~a</td><td>both, either, not, faces bordering <code>a</code>; group with ( )</td></tr>
-          </table></div>
-        </div>
-      </div>
-    </details>
-  </section>
-
-  <section class="stage" aria-label="Shape">
-    <div class="canvas-wrap" id="canvas-wrap">
-      <canvas id="view"></canvas>
-      <div class="overlay word-title"><div class="word" id="word"></div><div class="sub" id="word-sub"></div></div>
-      <div class="overlay counts" id="counts"></div>
-      <div class="overlay message" id="message" hidden></div>
-      <div class="tip" id="tip" hidden></div>
-    </div>
-    <div class="foot">
-      <div class="steps-row">
-        <span class="steps-label">Steps</span>
-        <div class="steps" id="steps" role="toolbar" aria-label="Show the shape after a step"></div>
-      </div>
-      <div class="view-row">
-        <div class="seg" id="colour-by" role="group" aria-label="Colour faces by">
-          <button type="button" data-mode="role" aria-pressed="true">Role</button>
-          <button type="button" data-mode="label" aria-pressed="false">Label</button>
-          <button type="button" data-mode="step" aria-pressed="false">Step</button>
-        </div>
-        <div class="legend" id="legend"></div>
-      </div>
-    </div>
-  </section>
-</main>
-<div class="toast" id="toast" hidden></div>
-
-<script type="module">
 import Modelita from "./modelita.js";
+import { EXAMPLES, FIRST_LINE, classify, tokenize, buildSteps, encode, decode } from "./lang.js";
 
-// --- examples --------------------------------------------------------------------------
-const EXAMPLES = {
-  "Tower": `; Read each word right to left: the seed comes last.
-; Put the cursor on a line to see its shape.
-
-storey(h) = x[inner](h) i[top](0.3)    ; a reusable step
-roof = k[top](0.8)
-
-tower = roof storey(1.2)^3 x[+z]{tower} C
-x[tower&side](0.2) tower               ; push out every tower wall
-house = k[top](0.9) x[+z](0.6) C(3, 2, 1)
-cup = x[inner](-1.6) i[+z](0.2) C`,
-  "Conway": `; Conway's operators, with no selector, act on the whole shape.
-t I          ; truncated icosahedron: a football
-s C          ; snub cube
-b D          ; bevelled dodecahedron
-d k T        ; triakis tetrahedron, then its dual
-
-; With a selector they act on part of it.
-d[top] x[+z] C
-g[+z] C
-e[+z|+x|+y] C`,
-  "Labels": `; A label names what a step makes, and faces built from it keep it.
-body = x[+z](0.4){roof} C(3, 2, 1)
-i[roof&top](0.3) body
-x[roof&inner](0.5) i[roof&top](0.3) body
-x[~roof](0.15) body                     ; the faces bordering the roof`,
-  "Handles": `; Bridge two faces with a tube to make a hole.
-ring = h[inner] i[+x|-x](0.3) x[+x](1) x[-x](1) C
-ring
-k[top](0.6) x[+z](0.5) ring
-h[inner] i[+z|-z](0.35) P6`,
-};
-const FIRST_LINE = { "Tower": 6 };
 
 // --- the engine --------------------------------------------------------------------------
 const engineBadge = document.getElementById("engine");
@@ -338,38 +12,13 @@ try {
 } catch (e) {
   engineBadge.textContent = "engine failed";
   engineBadge.dataset.state = "failed";
-  showMessage(`<p>The Modelita engine couldn't start here (${escapeHtml(String(e.message || e))}). ` +
-              `Run it locally: <code>make -C web serve</code>, then open the address it prints.</p>`);
+  showMessage(`<p>The Modelita engine couldn't start in this browser (${escapeHtml(String(e.message || e))}). ` +
+              `It needs WebAssembly, which current versions of Firefox, Chrome, Safari and Edge all have.</p>`);
 }
 function run(text) {
   return JSON.parse(engine.ccall("modelita_run", "string", ["string"], [text]));
 }
 
-// --- reading lines (only to know what each line is; the engine does the rest) ------------
-function classify(line) {
-  const code = line.split(";")[0];
-  if (!code.trim()) return { kind: "blank" };
-  if (/^\s*(use|gallery)\b/.test(code)) return { kind: "directive" };
-  let m = code.match(/^\s*export\s+"[^"]*"(.*)$/);
-  if (m) return { kind: "show", word: m[1].trim() };
-  m = code.match(/^\s*([A-Za-z][A-Za-z0-9_-]*)\s*(?:\(([^)]*)\))?\s*=(.*)$/);
-  if (m) return { kind: "define", name: m[1], params: m[2] && m[2].trim() ? m[2].split(",").map(s => s.trim()) : [], word: m[3].trim() };
-  return { kind: "show", word: code.trim() };
-}
-
-function tokenize(word) {
-  // Tokens are separated by spaces outside [ ], ( ) and { }.
-  const out = [];
-  let depth = 0, current = "";
-  for (const ch of word) {
-    if ("[({".includes(ch)) depth++;
-    if ("])}".includes(ch)) depth = Math.max(0, depth - 1);
-    if (/\s/.test(ch) && depth === 0) { if (current) out.push(current); current = ""; }
-    else current += ch;
-  }
-  if (current) out.push(current);
-  return out;
-}
 
 // --- state ---------------------------------------------------------------------------------
 const textarea = document.getElementById("program");
@@ -464,22 +113,15 @@ function updateFocus(force) {
   const base = lines.slice(0, index).map(l => (classify(l).kind === "show" ? "" : l));
   const tokens = tokenize(c.word);
   let operator = false;
-  let steps = buildSteps(base, tokens, "");
+  let steps = buildSteps(run, base, tokens, "");
   if (steps.length && steps[steps.length - 1].result?.kind === "operator") {
     operator = true;
     steps = [{ token: PREVIEW_SEED, result: run(base.concat([PREVIEW_SEED]).join("\n")).find(r => r.line === base.length + 1) }]
-      .concat(buildSteps(base, tokens, " " + PREVIEW_SEED));
+      .concat(buildSteps(run, base, tokens, " " + PREVIEW_SEED));
   }
   showSteps(c, steps, operator ? `steps, shown on ${PREVIEW_SEED}` : c.kind === "define" ? `${c.name}, as defined` : "");
 }
 
-function buildSteps(base, tokens, seed) {
-  // Line k after the base: the last k tokens, i.e. the shape after k steps.
-  const words = tokens.map((_, k) => tokens.slice(tokens.length - 1 - k).join(" ") + seed);
-  const results = run(base.concat(words).join("\n"));
-  const at = new Map(results.map(r => [r.line, r]));
-  return words.map((w, k) => ({ token: tokens[tokens.length - 1 - k], result: at.get(base.length + 1 + k) }));
-}
 
 function showSteps(c, steps, note) {
   state.steps = steps;
@@ -584,7 +226,8 @@ document.getElementById("colour-by").addEventListener("click", e => {
 });
 
 function renderLegend(legend) {
-  legendEl.innerHTML = legend.map((l, k) => `<span data-k="${k}"><i style="background:${css(l.colour)}"></i>${escapeHtml(l.name)}</span>`).join("");
+  legendEl.innerHTML = legend.map((l, k) => `<span data-k="${k}"><i></i>${escapeHtml(l.name)}</span>`).join("");
+  legendEl.querySelectorAll("i").forEach((swatch, k) => { swatch.style.background = css(legend[k].colour); });
   legendEl.onmouseover = e => { const s = e.target.closest("span[data-k]"); if (s) { state.highlight = legend[Number(s.dataset.k)].test; recolour(true); } };
   legendEl.onmouseleave = () => { state.highlight = null; recolour(true); };
 }
@@ -908,24 +551,6 @@ function loadProgram(text, line) {
   syncScroll();
 }
 
-// The program travels in the link: deflated, then base64url, which an
-// artifact link passes through as a plain #anchor.
-async function encode(text) {
-  let bytes = new TextEncoder().encode(text), tag = "t";
-  if (globalThis.CompressionStream) {
-    bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer());
-    tag = "z";
-  }
-  let bin = "";
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return tag + btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-async function decode(code) {
-  const b64 = code.slice(1).replace(/-/g, "+").replace(/_/g, "/");
-  const bytes = Uint8Array.from(atob(b64 + "===".slice((b64.length + 3) % 4)), c => c.charCodeAt(0));
-  if (code[0] === "z") return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
-  return new TextDecoder().decode(bytes);
-}
 let hashTimer = 0;
 function saveToHash() {
   clearTimeout(hashTimer);
@@ -942,9 +567,7 @@ document.getElementById("share").addEventListener("click", async () => {
   catch { toast("Copy the address from the address bar: it holds the whole program"); }
 });
 
-document.getElementById("copy-obj").addEventListener("click", async () => {
-  const r = state.shape;
-  if (!r) return toast("There's no shape on this line to copy");
+function shapeToObj(r) {
   // OBJ is read with y up: (x y z) is written as (x z -y). One group per role.
   const lines = [`# ${wordEl.textContent} — made with Modelita`];
   for (let i = 0; i < r.vertices.length; i += 3)
@@ -954,8 +577,28 @@ document.getElementById("copy-obj").addEventListener("click", async () => {
     if (r.roles[i] !== group) lines.push(`g ${group = r.roles[i]}`);
     lines.push("f " + f.map(v => v + 1).join(" "));
   });
-  try { await navigator.clipboard.writeText(lines.join("\n") + "\n"); toast(`Copied ${r.faces.length} faces as OBJ`); }
-  catch { toast("This page isn't allowed to use the clipboard"); }
+  return lines.join("\n") + "\n";
+}
+
+document.getElementById("copy-obj").addEventListener("click", async () => {
+  const r = state.shape;
+  if (!r) return toast("There's no shape on this line to copy");
+  try { await navigator.clipboard.writeText(shapeToObj(r)); toast(`Copied ${r.faces.length} faces as OBJ`); }
+  catch { toast("This browser didn't allow copying; use Download OBJ"); }
+});
+
+document.getElementById("download-obj").addEventListener("click", () => {
+  const r = state.shape;
+  if (!r) return toast("There's no shape on this line to download");
+  // named after the line's name, if it has one
+  const name = (classify(textarea.value.split("\n")[state.focusLine] ?? "").name || "modelita").replace(/[^A-Za-z0-9_-]/g, "");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([shapeToObj(r)], { type: "model/obj" }));
+  a.download = `${name || "modelita"}.obj`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
 
 let toastTimer = 0;
@@ -980,6 +623,3 @@ if (engine) {
   if (start) loadProgram(start, 0); else loadProgram(EXAMPLES.Tower, FIRST_LINE.Tower);
   examples.value = "";
 }
-</script>
-</body>
-</html>

@@ -35,6 +35,7 @@ c/modelita examples/demo.mdl                     # a program; export lines write
 python3 tests/run.py -- c/modelita               # the conformance suite
 python3 tests/run.py -- racket racket/cli.rkt    # ... against the Racket reference
 make -C web serve                                # the playground, at http://localhost:8642
+make check                                       # every implementation against the suite
 ```
 
 ## Writing an implementation
@@ -55,3 +56,7 @@ Planned next:
 
 The DrRacket `#lang` and the studio from `local-ops` will be moved over on
 top of `racket/`.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

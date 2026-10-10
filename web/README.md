@@ -6,7 +6,11 @@ other implementation builds.
 
 ```sh
 make serve       # then open http://localhost:8642
+make check       # the engine against the suite, and the page's own logic
 ```
+
+It is deployed to Vercel as a static site: `vercel.json` at the repository
+root serves `web/site/` with no build step.
 
 - **Editor**: runs as you type. The gutter marks each line: `●` a shape,
   `○` an operator, `=` a definition, `×` an error (listed below the editor;
@@ -20,17 +24,22 @@ make serve       # then open http://localhost:8642
 - **Colour by**: role, label or step. Hover a legend entry to pick out
   those faces.
 - **Copy link**: the whole program travels in the link (deflated, then
-  base64url, after `#`). **Copy OBJ** copies the shown shape, y up.
+  base64url, after `#`, so it never reaches the server). **Copy OBJ** and
+  **Download OBJ** give the shown shape, y up.
 
 ## Files
 
 | File | What |
 |---|---|
-| `index.html` | the page |
+| `site/` | exactly what is deployed |
+| `site/index.html`, `style.css`, `app.js` | the page: the editor, the view and the controls |
+| `site/lang.js` | what the page knows about Modelita text: line kinds, tokens, steps, links |
+| `site/modelita.js`, `modelita.wasm` | the engine: `modelita_web.c` + `../c/modelita.h` built with Emscripten |
+| `site/og.png`, `favicon.svg` | the link preview and the tab icon |
 | `modelita_web.c` | runs a program and returns the results as JSON |
-| `modelita.js` | the engine: `modelita_web.c` + `../c/modelita.h` built with Emscripten, with the `.wasm` embedded |
-| `dump.mjs` | the conformance dump from the WebAssembly build: `python3 tests/run.py -- node web/dump.mjs` |
+| `dump.mjs` | the conformance dump from the engine: `python3 tests/run.py -- node web/dump.mjs` |
+| `check-page.mjs` | `lang.js` against the engine: every example, every step, link round trips |
 
-`modelita.js` is checked in, so the page works without Emscripten.
-Rebuild it after changing the C code: `make` with `emcc` installed, or
-`make container` to use the official Emscripten image with podman.
+The engine is checked in, so the page needs no toolchain. Rebuild it after
+changing the C code: `make` with `emcc` installed, or `make container` to
+use the official Emscripten image with podman.

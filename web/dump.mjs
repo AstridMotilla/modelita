@@ -2,7 +2,7 @@
 // WebAssembly build, so the suite can check the engine the playground uses:
 //   python3 tests/run.py -- node web/dump.mjs
 import { readFileSync } from "node:fs";
-import Modelita from "./modelita.js";
+import Modelita from "./site/modelita.js";
 
 const engine = await Modelita();
 const results = JSON.parse(engine.ccall("modelita_run", "string", ["string"], [readFileSync(process.argv[2], "utf8")]));

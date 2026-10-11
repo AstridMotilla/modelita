@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modelita Playground</title>
+<meta name="description" content="A little language for shapes. Write a word, see the polyhedron it builds, right in your browser.">
+<meta name="theme-color" content="#fdfdfb">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Modelita Playground">
+<meta property="og:description" content="A little language for shapes.">
+<meta property="og:url" content="https://modelita.vercel.app/play/">
+<meta property="og:image" content="https://modelita.vercel.app/og-7559c517.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,300..700;1,62..125,300..700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+<link rel="stylesheet" href="/site.css">
+<link rel="stylesheet" href="/play/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">Modelita</a>
+  <nav class="site-links" aria-label="Site">
+    <a href="/tour/">Tour</a>
+    <a href="/cheatsheet/">Cheatsheet</a>
+    <a href="https://github.com/AstridMotilla/modelita">Source</a>
+  </nav>
+  <span class="engine" id="engine" data-state="loading">loading engine</span>
+  <div class="actions">
+    <select class="btn" id="examples" aria-label="Load an example"></select>
+    <button class="btn" id="download-obj" type="button">Download OBJ</button>
+    <button class="btn primary" id="share" type="button">Share</button>
+  </div>
+</header>
+
+<main>
+  <section class="side" aria-label="Program">
+    <div class="editor">
+      <div class="gutter" id="gutter" aria-hidden="true"></div>
+      <div class="code">
+        <div class="focus-bar" id="focus-bar"></div>
+        <textarea id="program" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Modelita program"></textarea>
+      </div>
+    </div>
+    <div class="notes" id="notes" aria-live="polite"></div>
+    <details class="reference" id="reference" open>
+      <summary>Reference <a href="/cheatsheet/">the full cheatsheet</a></summary>
+      <div class="ref">
+        <div>
+          <h3>Words</h3>
+          <div class="scroll"><table>
+            <tr><td>x[+z](0.6) C</td><td>Read right to left: a cube, then its +z face extruded 0.6.</td></tr>
+            <tr><td>name = word</td><td>A name for a shape, or for steps if the word has no seed.</td></tr>
+            <tr><td>name(h) = word</td><td>Steps with a number parameter, used as <code>name(1.2)</code>.</td></tr>
+            <tr><td>step^3</td><td>Repeat a step.</td></tr>
+            <tr><td>x[+z]{roof}</td><td>Label every face the step makes; faces built from them keep it.</td></tr>
+          </table></div>
+        </div>
+        <div>
+          <h3>Seeds</h3>
+          <div class="scroll"><table>
+            <tr><td>C(w, d, h)</td><td>Box, 2 × 2 × 2 by default</td></tr>
+            <tr><td>T O I D</td><td>Tetrahedron, octahedron, icosahedron, dodecahedron</td></tr>
+            <tr><td>P5 A5 Y5</td><td>Prism, antiprism, pyramid with 5 sides; take <code>(r, h)</code></td></tr>
+          </table></div>
+        </div>
+        <div>
+          <h3>Modelling</h3>
+          <div class="scroll"><table>
+            <tr><td>x(1)</td><td>extrude each face; makes <code>top</code>, <code>side</code></td></tr>
+            <tr><td>lift(1)</td><td>extrude each connected region as one block</td></tr>
+            <tr><td>i(0.3)</td><td>inset; makes <code>inner</code>, <code>rim</code>; below 1</td></tr>
+            <tr><td>k(0)</td><td>kis: a tent on each face; makes <code>tent</code></td></tr>
+            <tr><td>h</td><td>bridge two faces with a tube: a handle</td></tr>
+            <tr><td>scale(0.5)</td><td>scale each region about its centre</td></tr>
+            <tr><td>push(0.5)</td><td>move faces along their normals</td></tr>
+            <tr><td>merge, flip</td><td>undo a kis; flip the edge between two triangles</td></tr>
+          </table></div>
+        </div>
+        <div>
+          <h3>Conway</h3>
+          <div class="scroll"><table>
+            <tr><td>d a t(0.3) g r</td><td>dual, ambo, truncate, gyro, reflect</td></tr>
+            <tr><td>n z j e o m b s</td><td>needle kd, zip dk, join da, expand aa, ortho daa, meta kda, bevel ta, snub dg</td></tr>
+          </table></div>
+        </div>
+        <div>
+          <h3>Selectors</h3>
+          <div class="scroll"><table>
+            <tr><td>+x -x +y -y +z -z</td><td>faces facing that way</td></tr>
+            <tr><td>top roof</td><td>a role, or a label</td></tr>
+            <tr><td>new</td><td>faces the previous step made</td></tr>
+            <tr><td>n4 #3</td><td>faces with 4 corners; face number 3</td></tr>
+            <tr><td>a&amp;b a|b !a ~a</td><td>both, either, not, faces bordering <code>a</code>; group with ( )</td></tr>
+          </table></div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="stage" aria-label="Shape">
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="view"></canvas>
+      <div class="overlay word-title"><div class="word" id="word"></div><div class="sub" id="word-sub"></div></div>
+      <div class="overlay counts" id="counts"></div>
+      <div class="overlay message" id="message" hidden></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <div class="foot">
+      <div class="steps-row">
+        <span class="steps-label">Steps</span>
+        <div class="steps" id="steps" role="toolbar" aria-label="Show the shape after a step"></div>
+      </div>
+      <div class="view-row">
+        <div class="seg" id="colour-by" role="group" aria-label="Colour faces by">
+          <button type="button" data-mode="role" aria-pressed="true">Role</button>
+          <button type="button" data-mode="label" aria-pressed="false">Label</button>
+          <button type="button" data-mode="step" aria-pressed="false">Step</button>
+        </div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script type="module" src="/play/app.js"></script>
+</body>
+</html>

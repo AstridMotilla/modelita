@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modelita Cheatsheet</title>
+<meta name="description" content="All of Modelita on one page: words, seeds, operators and selectors, each operator with a picture.">
+<meta name="theme-color" content="#fdfdfb">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Modelita Cheatsheet">
+<meta property="og:description" content="A little language for shapes, on one page.">
+<meta property="og:url" content="https://modelita.vercel.app/cheatsheet/">
+<meta property="og:image" content="https://modelita.vercel.app/og-7559c517.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,300..700;1,62..125,300..700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+<link rel="stylesheet" href="/site.css">
+<script type="module" src="/figures.js"></script>
+</head>
+<body class="sheet-page">
+<div class="page wide">
+  <header class="site-head">
+    <a class="name" href="/">Modelita</a>
+    <nav aria-label="Site">
+      <a href="/tour/">Tour</a>
+      <a href="/cheatsheet/" aria-current="page">Cheatsheet</a>
+      <a href="/play/">Playground</a>
+      <a href="https://github.com/AstridMotilla/modelita/blob/master/SPEC.md">Spec</a>
+      <a href="https://github.com/AstridMotilla/modelita">Source</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="sheet-title">
+      <h1>Modelita <span>cheatsheet</span></h1>
+      <p class="key">
+        <span><i class="g sq"></i> top, rim, edge, merged</span>
+        <span><i class="g ci"></i> side, tube, face</span>
+        <span><i class="g tri"></i> tent, inner, vertex, flip</span>
+        <span><i class="g pa"></i> reshaped</span>
+        <span><i class="g wh"></i> untouched</span>
+      </p>
+      <p class="muted sheet-note">Each picture colours only what its last step made. Click a word to open it in the playground.</p>
+    </div>
+
+    <div class="sheet">
+      <div class="col">
+        <h2>Words</h2>
+        <table class="rows">
+          <tr><td><code>x[+z] C</code></td><td>read right to left; the seed is last</td></tr>
+          <tr><td><code>x[sel]</code></td><td>the faces it acts on; all if left out</td></tr>
+          <tr><td><code>x(0.6)</code></td><td>numbers; any left out take the defaults</td></tr>
+          <tr><td><code>x{roof}</code></td><td>label every face this step makes</td></tr>
+          <tr><td><code>x^3</code></td><td>repeat the step</td></tr>
+          <tr><td><code>name = word</code></td><td>a name for a shape, or for steps</td></tr>
+          <tr><td><code>name(h) = word</code></td><td>steps with a parameter, used as <code>name(1.2)</code></td></tr>
+          <tr><td><code>; note</code></td><td>a comment, to the end of the line</td></tr>
+          <tr><td><code>export "f.obj" word</code></td><td>write the shape as OBJ</td></tr>
+        </table>
+
+        <h2>Seeds</h2>
+        <div class="ops seeds">
+          <div class="op"><canvas data-word="C" aria-label="Box"></canvas><div><code><a data-play="C(3, 2, 1)">C(w, d, h)</a></code><p>box, 2 × 2 × 2</p></div></div>
+          <div class="op"><canvas data-word="T" aria-label="Tetrahedron"></canvas><div><code><a data-play="T">T(r)</a></code><p>tetrahedron</p></div></div>
+          <div class="op"><canvas data-word="O" aria-label="Octahedron"></canvas><div><code><a data-play="O">O(r)</a></code><p>octahedron</p></div></div>
+          <div class="op"><canvas data-word="I" aria-label="Icosahedron"></canvas><div><code><a data-play="I">I(r)</a></code><p>icosahedron</p></div></div>
+          <div class="op"><canvas data-word="D" aria-label="Dodecahedron"></canvas><div><code><a data-play="D">D(r)</a></code><p>dodecahedron</p></div></div>
+          <div class="op"><canvas data-word="P5" aria-label="Pentagonal prism"></canvas><div><code><a data-play="P5">P5(r, h)</a></code><p>prism, any n ≥ 3</p></div></div>
+          <div class="op"><canvas data-word="A5" aria-label="Pentagonal antiprism"></canvas><div><code><a data-play="A5">A5(r, h)</a></code><p>antiprism</p></div></div>
+          <div class="op"><canvas data-word="Y5" aria-label="Pentagonal pyramid"></canvas><div><code><a data-play="Y5">Y5(r, h)</a></code><p>pyramid</p></div></div>
+        </div>
+        <p class="small muted">T O I D have circumradius √3, like the cube.</p>
+      </div>
+
+      <div class="col">
+        <h2>Modelling</h2>
+        <div class="ops">
+          <div class="op"><canvas data-focus="last" data-word="x[+z] C" aria-label="Extrude"></canvas><div><code><a data-play="x[+z] C">x(1)</a></code> <span class="nm">extrude</span><p>a block on each face: <i class="g ci"></i>side <i class="g sq"></i>top</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="lift[+z|+x](0.6) C" aria-label="Lift"></canvas><div><code><a data-play="lift[+z|+x](0.6) C">lift(1)</a></code><p>one block per connected region</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="i[+z](0.3) C" aria-label="Inset"></canvas><div><code><a data-play="i[+z](0.3) C">i(0.3)</a></code> <span class="nm">inset</span><p>a face inside each face: <i class="g sq"></i>rim <i class="g tri"></i>inner; below 1</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="k[+z](0.8) C" aria-label="Kis"></canvas><div><code><a data-play="k[+z](0.8) C">k(0)</a></code> <span class="nm">kis</span><p>a tent on each face: <i class="g tri"></i>tent</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="h[inner] i[+z|-z](0.35) P6" data-pitch="0.9" aria-label="Bridge"></canvas><div><code><a data-play="h[inner] i[+z|-z](0.35) P6">h</a></code> <span class="nm">bridge</span><p>a tube between two faces: <i class="g ci"></i>tube</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="scale[top](0.5) x[+z] C" aria-label="Scale"></canvas><div><code><a data-play="scale[top](0.5) x[+z] C">scale(0.5)</a></code><p>each region about its centre</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="push[top](0.6) x[+z] C" aria-label="Push"></canvas><div><code><a data-play="push[top](0.6) x[+z] C">push(0.5)</a></code><p>faces along their normals</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="merge k(0.3) I" aria-label="Merge"></canvas><div><code><a data-play="merge k(0.3) I">merge</a></code><p>undo a kis: <i class="g sq"></i>merged</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="flip k C" aria-label="Flip"></canvas><div><code><a data-play="flip k C">flip</a></code><p>turn the edge between two triangles</p></div></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <h2>Conway</h2>
+        <div class="ops">
+          <div class="op"><canvas data-focus="last" data-word="d C" aria-label="Dual of a cube"></canvas><div><code><a data-play="d C">d</a></code> <span class="nm">dual</span><p>a face for each corner: <i class="g tri"></i>vertex <i class="g sq"></i>edge</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="a C" aria-label="Ambo of a cube"></canvas><div><code><a data-play="a C">a</a></code> <span class="nm">ambo</span><p>cut every corner to the middle</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="t C" aria-label="Truncated cube"></canvas><div><code><a data-play="t C">t(0.3)</a></code> <span class="nm">truncate</span><p>cut every corner; up to 0.5</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="g C" aria-label="Gyro of a cube"></canvas><div><code><a data-play="g C">g</a></code> <span class="nm">gyro</span><p>pentagons in a pinwheel: <i class="g ci"></i>face</p></div></div>
+          <div class="op"><canvas data-word="r x[+x] C" aria-label="Reflect"></canvas><div><code><a data-play="r x[+x] C">r</a></code> <span class="nm">reflect</span><p>mirror across x = 0; every face</p></div></div>
+          <div class="op"><canvas data-focus="last" data-word="s C" aria-label="Snub cube"></canvas><div><code><a data-play="s C">s</a></code> <span class="nm">snub</span><p>one of the letters made from others:</p></div></div>
+        </div>
+        <table class="rows derived">
+          <tr><td><code>n</code> kd</td><td><code>z</code> dk</td><td><code>j</code> da</td><td><code>e</code> aa</td></tr>
+          <tr><td><code>o</code> daa</td><td><code>m</code> kda</td><td><code>b</code> ta</td><td><code>s</code> dg</td></tr>
+        </table>
+        <p class="small muted">With a selector they act on part of the shape: <code><a data-play="d[top] x[+z] C">d[top] x[+z] C</a></code></p>
+
+        <h2>Selectors</h2>
+        <table class="rows">
+          <tr><td><code>+x -x +y -y +z -z</code></td><td>faces facing that way</td></tr>
+          <tr><td><code>top roof</code></td><td>a role, or a label</td></tr>
+          <tr><td><code>all new</code></td><td>every face; what the last step made</td></tr>
+          <tr><td><code>n4 #3</code></td><td>faces with 4 corners; face number 3</td></tr>
+          <tr><td><code>a&amp;b a|b</code></td><td>both; either</td></tr>
+          <tr><td><code>!a ~a</code></td><td>not; the faces bordering <code>a</code></td></tr>
+          <tr><td><code>( )</code></td><td>grouping; <code>! ~</code> bind tightest, then <code>&amp;</code>, then <code>|</code></td></tr>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+<footer class="site-foot">
+  <nav aria-label="Project">
+    <a href="https://github.com/AstridMotilla/modelita/blob/master/SPEC.md">Specification, draft 1</a>
+    <a href="/tour/">Tour</a>
+    <a href="/play/">Playground</a>
+  </nav>
+  MIT licence
+</footer>
+</body>
+</html>

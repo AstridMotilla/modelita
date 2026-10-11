@@ -1,5 +1,5 @@
-import Modelita from "./modelita.js";
-import { EXAMPLES, FIRST_LINE, classify, tokenize, buildSteps, encode, decode } from "./lang.js";
+import Modelita from "/modelita.js";
+import { EXAMPLES, FIRST_LINE, classify, tokenize, buildSteps, encode, decode } from "/lang.js";
 
 
 // --- the engine --------------------------------------------------------------------------
@@ -171,47 +171,38 @@ function showStep(k, fitShape) {
     (r.skipped ? `<br>${r.skipped} skipped` : "");
 }
 
-// --- colours (the blog's: one hue per role, HLS like Python's colorsys) ------------------------
-const ROLE_HUES = { seed: 186, top: 28, side: 186, tent: 265, rim: 140, inner: 330, tube: 300,
-                    vertex: 205, edge: 52, face: 5, merged: 75, flip: 100 };
-function hls(h, l, s) {
-  const m2 = l <= 0.5 ? l * (1 + s) : l + s - l * s, m1 = 2 * l - m2;
-  const v = hue => {
-    hue = hue - Math.floor(hue);
-    if (hue < 1 / 6) return m1 + (m2 - m1) * hue * 6;
-    if (hue < 0.5) return m2;
-    if (hue < 2 / 3) return m1 + (m2 - m1) * (2 / 3 - hue) * 6;
-    return m1;
-  };
-  return s === 0 ? [l, l, l] : [v(h / 360 + 1 / 3), v(h / 360), v(h / 360 - 1 / 3)];
+// --- colours: Byrne's red, yellow and blue, from site.css, so the playground matches the site ---
+const mix = (a, b, t) => a.map((x, k) => x + (b[k] - x) * t);
+function cycleColour(k) {
+  // Red, yellow and blue in turn, paler on each round after the first.
+  const base = themeColour(["--yellow", "--blue", "--red"][k % 3]);
+  return mix(base, themeColour("--paper"), Math.min(0.75, 0.4 * Math.floor(k / 3)));
 }
 const css = rgb => `rgb(${rgb.map(c => Math.round(c * 255)).join(" ")})`;
 
 function faceColours(r) {
   // A colour per face, and the legend that explains them.
-  const F = r.faces.length;
-  const out = new Array(F);
+  const out = new Array(r.faces.length);
   const legend = [];
+  const seed = themeColour("--r-seed");
   if (state.mode === "role") {
     const seen = new Map();
     r.roles.forEach((role, i) => {
-      out[i] = hls(ROLE_HUES[role] ?? 186, 0.55, 0.7);
+      out[i] = themeColour("--r-" + role, seed);
       if (!seen.has(role)) seen.set(role, out[i]);
     });
     for (const [role, c] of seen) legend.push({ name: role, colour: c, test: i => r.roles[i] === role });
   } else if (state.mode === "label") {
     const names = [...new Set(r.labels.flat())].sort();
-    const hueOf = new Map(names.map((n, k) => [n, (28 + k * 137.5) % 360]));
-    r.labels.forEach((ls, i) => {
-      out[i] = ls.length ? hls(hueOf.get(ls[ls.length - 1]), 0.55, 0.7) : hls(0, 0.5, 0);
-    });
-    for (const n of names) legend.push({ name: n, colour: hls(hueOf.get(n), 0.55, 0.7), test: i => r.labels[i].includes(n) });
-    legend.push({ name: names.length ? "no label" : "no labels yet: add {name} to a step", colour: hls(0, 0.5, 0), test: i => !r.labels[i].length });
+    const colourOf = new Map(names.map((n, k) => [n, cycleColour(k)]));
+    r.labels.forEach((ls, i) => { out[i] = ls.length ? colourOf.get(ls[ls.length - 1]) : seed; });
+    for (const n of names) legend.push({ name: n, colour: colourOf.get(n), test: i => r.labels[i].includes(n) });
+    legend.push({ name: names.length ? "no label" : "no labels yet: add {name} to a step", colour: seed, test: i => !r.labels[i].length });
   } else {
-    const max = Math.max(1, ...r.steps);
-    r.steps.forEach((s, i) => { out[i] = hls(210 - 182 * (s / max), 0.52, 0.65); });
+    const colourOf = s => (s === 0 ? seed : cycleColour(s - 1));
+    r.steps.forEach((s, i) => { out[i] = colourOf(s); });
     const steps = [...new Set(r.steps)].sort((a, b) => a - b);
-    for (const s of steps) legend.push({ name: s === 0 ? "seed" : `step ${s}`, colour: hls(210 - 182 * (s / max), 0.52, 0.65), test: i => r.steps[i] === s });
+    for (const s of steps) legend.push({ name: s === 0 ? "seed" : `step ${s}`, colour: colourOf(s), test: i => r.steps[i] === s });
   }
   return { colours: out, legend };
 }
@@ -268,8 +259,8 @@ if (gl) {
       if (uPick == 1) { o = vec4(mod(vId, 256.0) / 255.0, mod(floor(vId / 256.0), 256.0) / 255.0, floor(vId / 65536.0) / 255.0, 1.0); return; }
       vec3 n = normalize(vN);
       if (!gl_FrontFacing) n = -n;
-      float d = max(dot(n, normalize(vec3(-0.45, 0.55, 0.7))), 0.0);   // the blog's light, from the upper left
-      o = vec4(vC * (0.3 + 0.7 * d), 1.0);
+      float d = max(dot(n, normalize(vec3(-0.45, 0.55, 0.7))), 0.0);   // light from the upper left
+      o = vec4(vC * (0.8 + 0.2 * d), 1.0);                                // nearly flat, like Byrne's plates
     }`);
   lineProg = compile(`#version 300 es
     in vec3 aPos; uniform mat4 uProj, uView;
@@ -356,7 +347,7 @@ function recolour(keepLegend) {
   if (!keepLegend) renderLegend(legend);
   if (!mesh) return;
   const data = new Float32Array(mesh.count * 3);
-  const hl = state.highlight, dim = hls(186, 0.3, 0.06);
+  const hl = state.highlight, dim = mix(themeColour("--paper"), themeColour("--grey"), 0.25);
   for (let t = 0; t < mesh.count; t++) {
     const i = mesh.faceOfVertex[t];
     data.set(hl && !hl(i) ? dim : colours[i], t * 3);
@@ -395,10 +386,10 @@ const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const norm = a => { const l = Math.hypot(...a) || 1; return a.map(x => x / l); };
 
-function themeColour(name) {
+function themeColour(name, fallback = [0.1, 0.1, 0.1]) {
   const c = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const m = c.match(/^#([0-9a-f]{6})$/i);
-  return m ? [0, 2, 4].map(k => parseInt(m[1].slice(k, k + 2), 16) / 255) : [0.12, 0.13, 0.13];
+  return m ? [0, 2, 4].map(k => parseInt(m[1].slice(k, k + 2), 16) / 255) : fallback;
 }
 
 let frame = 0;
@@ -468,8 +459,8 @@ new ResizeObserver(() => {
   canvas.height = Math.max(1, Math.round(wrap.clientHeight * dpr));
   draw();
 }).observe(wrap);
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
-new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { recolour(); draw(); });
+new MutationObserver(() => { recolour(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
 // --- moving the camera, and pointing at faces --------------------------------------------------
 const pointers = new Map();

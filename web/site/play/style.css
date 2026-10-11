@@ -1,43 +1,30 @@
-/* Layout: a workbench. The program sits on the left like a notebook margin;
-   the model stands on the stage at right, and the word's steps run along the
-   stage's foot, read right to left. Colours are the blog's: a night stage and
-   one hue per face role. */
+/* The playground: a workbench. The program sits on the left like a notebook
+   margin; the model stands on the paper at right, and the word's steps run
+   along its foot, read right to left. The colours are the site's (site.css):
+   white paper, black ink, and Byrne's red, yellow and blue for the faces. */
 :root {
-  --bg: #eef1f1;
-  --panel: #fbfcfc;
-  --stage: #e3e8e8;
-  --line: #d3dada;
-  --fg: #1a1f20;
-  --muted: #5a6566;
-  --accent: #b5641c;
-  --accent-soft: #f3e2d2;
-  --error: #b3263a;
-  --ok: #2f7d55;
-  --edge: #273031;
-  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --bg: var(--paper);
+  --panel: var(--paper);
+  --stage: var(--paper);
+  --line: var(--rule);
+  --fg: var(--ink);
+  --muted: var(--grey);
+  --accent: var(--ink);
+  --accent-soft: #fbf0cf;
+  --error: var(--red);
+  --ok: var(--blue);
+  --display: var(--text);
+  --body: var(--text);
   --code-size: 13px;
   --code-line: 21px;
-  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #1b1e1f; --panel: #222627; --stage: #1e2122; --line: #333a3b; --fg: #e2e6e5;
-    --muted: #96a1a0; --accent: #e5904a; --accent-soft: #3a2c20; --error: #f07080; --ok: #6cc896;
-    --edge: #1e2122; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #1b1e1f; --panel: #222627; --stage: #1e2122; --line: #333a3b; --fg: #e2e6e5;
-  --muted: #96a1a0; --accent: #e5904a; --accent-soft: #3a2c20; --error: #f07080; --ok: #6cc896;
-  --edge: #1e2122; color-scheme: dark;
-}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent-soft: #3a321c; } }
+:root[data-theme="dark"] { --accent-soft: #3a321c; }
 
 html, body { height: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--fg);
-  font: 14px/1.45 var(--body);
+  font: 380 14px/1.45 var(--body);
   display: flex; flex-direction: column;
 }
 button, select, input, textarea { font: inherit; color: inherit; }
@@ -48,23 +35,22 @@ header {
   display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap;
   padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
 }
-.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
-.brand h1 {
-  margin: 0; font: 760 22px/1 var(--display); font-stretch: 118%; letter-spacing: -0.01em;
-}
-.brand .tag { font: 12px var(--mono); color: var(--muted); }
+.brand { font-weight: 600; font-stretch: 115%; letter-spacing: .04em; text-decoration: none; font-size: 15px; }
+.site-links { display: flex; gap: 18px; margin-right: auto; font-size: 14px; }
+.site-links a { color: var(--muted); text-decoration: none; }
+.site-links a:hover { color: var(--fg); }
 .engine { font: 12px var(--mono); color: var(--muted); display: flex; align-items: center; gap: 6px; }
 .engine::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
 .engine[data-state="ready"]::before { background: var(--ok); }
 .engine[data-state="failed"]::before { background: var(--error); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn {
-  border: 1px solid var(--line); background: var(--bg); border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); border-radius: 0;
   padding: 6px 11px; cursor: pointer; white-space: nowrap;
 }
-.btn:hover { border-color: var(--accent); }
+.btn:hover { border-color: var(--fg); }
 a.btn { text-decoration: none; display: inline-flex; align-items: center; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 600; }
+.btn.primary { background: var(--fg); border-color: var(--fg); color: var(--bg); font-weight: 500; }
 select.btn { padding-right: 8px; }
 
 /* --- the bench ---------------------------------------------------------------- */
@@ -105,10 +91,11 @@ textarea#program {
 
 details.reference { flex: 0 1 auto; overflow: auto; max-height: 45%; }
 details.reference > summary {
-  cursor: pointer; padding: 10px 14px; font: 600 12px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  cursor: pointer; padding: 10px 14px; font: 500 12px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
 }
+details.reference > summary a { margin-left: 10px; text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 380; }
 .ref { padding: 0 14px 14px; display: grid; gap: 14px; }
-.ref h3 { margin: 0 0 4px; font: 600 12px var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ref h3 { margin: 0 0 4px; font: 500 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .ref table { border-collapse: collapse; width: 100%; font-size: 13px; }
 .ref td { padding: 3px 8px 3px 0; vertical-align: top; border-top: 1px solid var(--line); }
 .ref td:first-child { font-family: var(--mono); white-space: nowrap; width: 1%; }
@@ -134,34 +121,34 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .message p { max-width: 42ch; margin: 0; }
 .message .err { color: var(--error); font-family: var(--mono); font-size: 13px; }
 .tip {
-  position: absolute; pointer-events: none; padding: 6px 9px; border-radius: 6px; background: var(--panel);
+  position: absolute; pointer-events: none; padding: 6px 9px; border-radius: 0; background: var(--panel);
   border: 1px solid var(--line); font: 12px/1.4 var(--mono); white-space: nowrap; transform: translate(12px, 12px);
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+
 }
 
 .foot { border-top: 1px solid var(--line); padding: 10px 16px 12px; display: grid; gap: 10px; background: var(--panel); }
 .steps-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.steps-label { font: 600 11px var(--body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.steps-label { font: 500 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .steps { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; min-width: 0; direction: ltr; }
 .chip {
-  border: 1px solid var(--line); background: var(--bg); border-radius: 5px; padding: 4px 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg); border-radius: 0; padding: 4px 8px; cursor: pointer;
   font: 13px var(--mono); white-space: nowrap;
 }
-.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.chip[aria-pressed="true"] { border-color: var(--fg); background: var(--accent-soft); }
 .chip.pending { opacity: 0.45; }
 .chip.failed { border-color: var(--error); color: var(--error); }
 .view-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg { display: inline-flex; border: 1px solid var(--line); overflow: hidden; }
 .seg button { border: 0; background: var(--bg); padding: 4px 10px; cursor: pointer; font-size: 13px; }
 .seg button + button { border-left: 1px solid var(--line); }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--panel); font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); font-weight: 500; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 12px var(--mono); min-width: 0; }
 .legend span { display: inline-flex; align-items: center; gap: 5px; cursor: default; }
-.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.legend i { width: 10px; height: 10px; display: inline-block; outline: 1px solid var(--edge); outline-offset: -1px; }
 
 .toast {
   position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-  background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px;
+  background: var(--fg); color: var(--bg); padding: 8px 14px; font-size: 13px;
 }
 
 @media (max-width: 760px) {

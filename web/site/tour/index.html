@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Modelita Tour</title>
+<meta name="description" content="The Modelita language in twelve figures.">
+<meta name="theme-color" content="#fdfdfb">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Modelita Tour">
+<meta property="og:description" content="A little language for shapes, in twelve figures.">
+<meta property="og:url" content="https://modelita.vercel.app/tour/">
+<meta property="og:image" content="https://modelita.vercel.app/og-7559c517.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,300..700;1,62..125,300..700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+<link rel="stylesheet" href="/site.css">
+<script type="module" src="/figures.js"></script>
+</head>
+<body>
+<div class="page">
+  <header class="site-head">
+    <a class="name" href="/">Modelita</a>
+    <nav aria-label="Site">
+      <a href="/tour/" aria-current="page">Tour</a>
+      <a href="/cheatsheet/">Cheatsheet</a>
+      <a href="/play/">Playground</a>
+      <a href="https://github.com/AstridMotilla/modelita/blob/master/SPEC.md">Spec</a>
+      <a href="https://github.com/AstridMotilla/modelita">Source</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="title">
+      <h1>The tour</h1>
+      <p class="motto">the language in twelve figures</p>
+    </div>
+
+    <ol class="tour">
+      <li>
+        <canvas data-word="C" aria-label="A cube"></canvas>
+        <div>
+          <code><a data-play="C">C</a></code>
+          <p>Every word ends in a <b>seed</b>, written as a capital. <code>C</code> is a box; the others are <code>T O I D</code> and the prisms, antiprisms and pyramids <code>P5 A5 Y5</code>.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="C(3, 2, 1)" aria-label="A flat box"></canvas>
+        <div>
+          <code><a data-play="C(3, 2, 1)">C(3, 2, 1)</a></code>
+          <p>Numbers in brackets set the size: width, depth and height.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="x C" aria-label="A cube with every face extruded"></canvas>
+        <div>
+          <code><a data-play="x C">x C</a></code>
+          <p>A <b>step</b> is written to the left of the shape it changes. <code>x</code> extrudes: it pulls each face out into a block, with <i class="g ci"></i>sides and a <i class="g sq"></i>top.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="x[+z] C" aria-label="A cube with its top extruded"></canvas>
+        <div>
+          <code><a data-play="x[+z] C">x[+z] C</a></code>
+          <p>A <b>selector</b> in square brackets picks the faces a step acts on. <code>+z</code> is every face looking up.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="k[top] x[+z] C" aria-label="A cube, extruded, with a tent on top"></canvas>
+        <div>
+          <code><a data-play="k[top] x[+z] C">k[top] x[+z] C</a></code>
+          <p>Steps run right to left, each on the shape the one before it left. Faces remember the <b>role</b> they were made in, so <code>top</code> is the lid <code>x</code> just made, and <code>k</code> puts a <i class="g tri"></i>tent on it.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="x[inner](-1.6) i[+z](0.2) C" data-pitch="0.8" aria-label="A cup"></canvas>
+        <div>
+          <code><a data-play="x[inner](-1.6) i[+z](0.2) C">x[inner](-1.6) i[+z](0.2) C</a></code>
+          <p>Inset the top with <code>i</code>, then extrude its <i class="g tri"></i>inner face the other way: a cup.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="x[roof&amp;inner](0.5) i[roof&amp;top](0.3) x[+z](0.4){roof} C(3, 2, 1)" aria-label="A box with a raised roof and a chimney-like block on it"></canvas>
+        <div>
+          <code><a data-play="x[roof&amp;inner](0.5) i[roof&amp;top](0.3) x[+z](0.4){roof} C(3, 2, 1)">x[roof&amp;inner](0.5) i[roof&amp;top](0.3) x[+z](0.4){roof} C(3, 2, 1)</a></code>
+          <p>A <b>label</b> in braces names what a step makes, and faces built from them keep it. Selectors combine: <code>&amp;</code> is both, <code>|</code> either, <code>!</code> not.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="house = k[top](0.9) x[+z](0.6) C(3, 2, 1)&#10;x[side](0.3) house" aria-label="A house with its walls pushed out"></canvas>
+        <div>
+          <code class="block"><a data-play="house = k[top](0.9) x[+z](0.6) C(3, 2, 1)&#10;x[side](0.3) house">house = k[top](0.9) x[+z](0.6) C(3, 2, 1)<br>x[side](0.3) house</a></code>
+          <p>A <b>name</b> stands for a word, from the next line on.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="storey(h) = x[inner](h) i[top](0.3)&#10;roof = k[top](0.8)&#10;roof storey(1.2)^3 x[+z]{tower} C" aria-label="A tower"></canvas>
+        <div>
+          <code class="block"><a data-play="storey(h) = x[inner](h) i[top](0.3)&#10;roof = k[top](0.8)&#10;roof storey(1.2)^3 x[+z]{tower} C">storey(h) = x[inner](h) i[top](0.3)<br>roof = k[top](0.8)<br>roof storey(1.2)^3 x[+z]{tower} C</a></code>
+          <p>A word without a seed is a reusable list of steps, and it can take numbers. <code>^3</code> repeats a step three times.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="h[inner] i[+x|-x](0.3) x[+x](1) x[-x](1) C" aria-label="A ring"></canvas>
+        <div>
+          <code><a data-play="h[inner] i[+x|-x](0.3) x[+x](1) x[-x](1) C">h[inner] i[+x|-x](0.3) x[+x](1) x[-x](1) C</a></code>
+          <p><code>h</code> joins two faces with a <i class="g ci"></i>tube. It is the only step that makes a hole.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="t I" aria-label="A truncated icosahedron"></canvas>
+        <div>
+          <code><a data-play="t I">t I</a></code>
+          <p>Conway's polyhedron operators are single letters: <code>d a t k g</code> and the ones made from them. Truncate an icosahedron and you have a football.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="k[vertex](0.25) t I" aria-label="A football with tents on its pentagons"></canvas>
+        <div>
+          <code><a data-play="k[vertex](0.25) t I">k[vertex](0.25) t I</a></code>
+          <p>They take selectors like any other step. <code>t</code> made the pentagons as <i class="g tri"></i>vertex faces, so here only they get tents.</p>
+        </div>
+      </li>
+    </ol>
+
+    <p class="caption tour-end">The rest is on the <a href="/cheatsheet/">cheatsheet</a>, and every detail is in the <a href="https://github.com/AstridMotilla/modelita/blob/master/SPEC.md">spec</a>. Try it in the <a href="/play/">playground</a>.</p>
+  </main>
+</div>
+<footer class="site-foot">
+  <nav aria-label="Project">
+    <a href="https://github.com/AstridMotilla/modelita/blob/master/SPEC.md">Specification, draft 1</a>
+    <a href="/cheatsheet/">Cheatsheet</a>
+    <a href="/play/">Playground</a>
+  </nav>
+  MIT licence
+</footer>
+</body>
+</html>

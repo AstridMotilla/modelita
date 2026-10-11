@@ -4,6 +4,7 @@
   "installCommand": "",
   "buildCommand": "",
   "outputDirectory": "web/site",
+  "trailingSlash": true,
   "headers": [
     {
       "source": "/(.*)",

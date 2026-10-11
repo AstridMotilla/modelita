@@ -2,8 +2,8 @@
 
 A little language for shapes.
 
-**Try it:** [modelita.vercel.app](https://modelita.vercel.app), the playground,
-running the C implementation as WebAssembly.
+**Try it:** [modelita.vercel.app](https://modelita.vercel.app): a tour, a
+cheatsheet and a playground, all running the C implementation as WebAssembly.
 
 ```
 k[top](0.8) storey(1.2)^3 x[+z]{tower} C
@@ -27,7 +27,7 @@ anywhere.
 | [`tests/`](tests/) | the conformance suite: programs and the dumps they must produce, plus a runner that works with any implementation |
 | [`racket/`](racket/) | the reference implementation |
 | [`c/`](c/) | the whole language in one C99 header, `modelita.h`, plus a command-line tool |
-| [`web/`](web/) | the playground: an editor and 3D view running the C header as WebAssembly |
+| [`web/`](web/) | the site: a tour, a cheatsheet, and a playground with an editor and 3D view, all running the C header as WebAssembly |
 
 ## Try it
 
@@ -37,7 +37,7 @@ c/modelita -e "k[top](0.9) x[+z](0.6) C"         # the dump of one word
 c/modelita examples/demo.mdl                     # a program; export lines write .obj files
 python3 tests/run.py -- c/modelita               # the conformance suite
 python3 tests/run.py -- racket racket/cli.rkt    # ... against the Racket reference
-make -C web serve                                # the playground, at http://localhost:8642
+make -C web serve                                # the site, at http://localhost:8642
 make check                                       # every implementation against the suite
 ```
 
@@ -54,7 +54,6 @@ Draft 1 of the spec, with two implementations (Racket and C) that pass the
 same suite, and the C one also passes it compiled to WebAssembly. They also agree on thousands of randomly generated words.
 Planned next:
 
-- a one-page cheatsheet;
 - bindings for other languages, starting with Python.
 
 The DrRacket `#lang` and the studio from `local-ops` will be moved over on

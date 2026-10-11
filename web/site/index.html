@@ -3,129 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Modelita Playground</title>
-<meta name="description" content="A little language for shapes. Write a word, see the polyhedron it builds, right in your browser.">
-<meta name="theme-color" content="#1e2122">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script src="/forward.js"></script>
+<title>Modelita</title>
+<meta name="description" content="A little language for shapes. Write a word, get a polyhedron.">
+<meta name="theme-color" content="#fdfdfb">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Modelita Playground">
+<meta property="og:title" content="Modelita">
 <meta property="og:description" content="A little language for shapes.">
 <meta property="og:url" content="https://modelita.vercel.app/">
-<meta property="og:image" content="https://modelita.vercel.app/og-7559c517.png">
+<meta property="og:image" content="https://modelita.vercel.app/og-afff4001.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=DM+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,300..700;1,62..125,300..700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap">
+<link rel="stylesheet" href="/site.css">
+<script type="module" src="/figures.js"></script>
 </head>
 <body>
-<header>
-  <div class="brand">
-    <h1>Modelita</h1>
-    <span class="tag">a little language for shapes</span>
-  </div>
-  <span class="engine" id="engine" data-state="loading">loading engine</span>
-  <div class="actions">
-    <select class="btn" id="examples" aria-label="Load an example"></select>
-    <button class="btn" id="download-obj" type="button">Download OBJ</button>
-    <a class="btn" href="https://github.com/AstridMotilla/modelita">Source</a>
-    <button class="btn primary" id="share" type="button">Share</button>
-  </div>
-</header>
+<div class="page">
+  <header class="site-head">
+    <a class="name" href="/">Modelita</a>
+    <nav aria-label="Site">
+      <a href="/tour/">Tour</a>
+      <a href="/cheatsheet/">Cheatsheet</a>
+      <a href="/play/">Playground</a>
+    </nav>
+  </header>
 
-<main>
-  <section class="side" aria-label="Program">
-    <div class="editor">
-      <div class="gutter" id="gutter" aria-hidden="true"></div>
-      <div class="code">
-        <div class="focus-bar" id="focus-bar"></div>
-        <textarea id="program" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Modelita program"></textarea>
-      </div>
+  <main>
+    <div class="title">
+      <h1>Modelita</h1>
+      <p class="motto">a little language for shapes</p>
     </div>
-    <div class="notes" id="notes" aria-live="polite"></div>
-    <details class="reference" id="reference" open>
-      <summary>Reference</summary>
-      <div class="ref">
-        <div>
-          <h3>Words</h3>
-          <div class="scroll"><table>
-            <tr><td>x[+z](0.6) C</td><td>Read right to left: a cube, then its +z face extruded 0.6.</td></tr>
-            <tr><td>name = word</td><td>A name for a shape, or for steps if the word has no seed.</td></tr>
-            <tr><td>name(h) = word</td><td>Steps with a number parameter, used as <code>name(1.2)</code>.</td></tr>
-            <tr><td>step^3</td><td>Repeat a step.</td></tr>
-            <tr><td>x[+z]{roof}</td><td>Label every face the step makes; faces built from them keep it.</td></tr>
-          </table></div>
-        </div>
-        <div>
-          <h3>Seeds</h3>
-          <div class="scroll"><table>
-            <tr><td>C(w, d, h)</td><td>Box, 2 × 2 × 2 by default</td></tr>
-            <tr><td>T O I D</td><td>Tetrahedron, octahedron, icosahedron, dodecahedron</td></tr>
-            <tr><td>P5 A5 Y5</td><td>Prism, antiprism, pyramid with 5 sides; take <code>(r, h)</code></td></tr>
-          </table></div>
-        </div>
-        <div>
-          <h3>Modelling</h3>
-          <div class="scroll"><table>
-            <tr><td>x(1)</td><td>extrude each face; makes <code>top</code>, <code>side</code></td></tr>
-            <tr><td>lift(1)</td><td>extrude each connected region as one block</td></tr>
-            <tr><td>i(0.3)</td><td>inset; makes <code>inner</code>, <code>rim</code>; below 1</td></tr>
-            <tr><td>k(0)</td><td>kis: a tent on each face; makes <code>tent</code></td></tr>
-            <tr><td>h</td><td>bridge two faces with a tube: a handle</td></tr>
-            <tr><td>scale(0.5)</td><td>scale each region about its centre</td></tr>
-            <tr><td>push(0.5)</td><td>move faces along their normals</td></tr>
-            <tr><td>merge, flip</td><td>undo a kis; flip the edge between two triangles</td></tr>
-          </table></div>
-        </div>
-        <div>
-          <h3>Conway</h3>
-          <div class="scroll"><table>
-            <tr><td>d a t(0.3) g r</td><td>dual, ambo, truncate, gyro, reflect</td></tr>
-            <tr><td>n z j e o m b s</td><td>needle kd, zip dk, join da, expand aa, ortho daa, meta kda, bevel ta, snub dg</td></tr>
-          </table></div>
-        </div>
-        <div>
-          <h3>Selectors</h3>
-          <div class="scroll"><table>
-            <tr><td>+x -x +y -y +z -z</td><td>faces facing that way</td></tr>
-            <tr><td>top roof</td><td>a role, or a label</td></tr>
-            <tr><td>new</td><td>faces the previous step made</td></tr>
-            <tr><td>n4 #3</td><td>faces with 4 corners; face number 3</td></tr>
-            <tr><td>a&amp;b a|b !a ~a</td><td>both, either, not, faces bordering <code>a</code>; group with ( )</td></tr>
-          </table></div>
-        </div>
-      </div>
-    </details>
-  </section>
+    <div class="hero">
+      <canvas data-spin data-yaw="-0.8" data-pitch="0.42" data-scale="0.86"
+        data-word="storey(h) = x[inner](h) i[top](0.3)&#10;roof = k[top](0.8)&#10;roof storey(1.2)^3 x[+z]{tower} C"
+        aria-label="A tower: a cube with three storeys and a tent roof. Drag to turn it."></canvas>
+      <div class="word"><b class="u-red">roof</b> <b class="u-blue">storey(1.2)^3</b> <b class="u-yellow">x[+z]{tower}</b> <b>C</b></div>
+      <p class="caption">Read from the right: a cube, raised, three storeys, a roof.</p>
+    </div>
 
-  <section class="stage" aria-label="Shape">
-    <div class="canvas-wrap" id="canvas-wrap">
-      <canvas id="view"></canvas>
-      <div class="overlay word-title"><div class="word" id="word"></div><div class="sub" id="word-sub"></div></div>
-      <div class="overlay counts" id="counts"></div>
-      <div class="overlay message" id="message" hidden></div>
-      <div class="tip" id="tip" hidden></div>
-    </div>
-    <div class="foot">
-      <div class="steps-row">
-        <span class="steps-label">Steps</span>
-        <div class="steps" id="steps" role="toolbar" aria-label="Show the shape after a step"></div>
+    <section>
+      <h2>In six figures</h2>
+      <div class="plates">
+        <figure class="plate"><canvas data-word="C" aria-label="A cube"></canvas>
+          <span class="n">I</span><code><a data-play="C">C</a></code><figcaption>A seed.</figcaption></figure>
+        <figure class="plate"><canvas data-word="x[+z] C" aria-label="A cube with its top extruded"></canvas>
+          <span class="n">II</span><code><a data-play="x[+z] C">x[+z] C</a></code><figcaption>A step, written to its left.</figcaption></figure>
+        <figure class="plate"><canvas data-word="i[+z](0.3) C" aria-label="A cube with its top inset"></canvas>
+          <span class="n">III</span><code><a data-play="i[+z](0.3) C">i[+z](0.3) C</a></code><figcaption>The selector picks the faces.</figcaption></figure>
+        <figure class="plate"><canvas data-word="k[top] x[+z] C" aria-label="A cube, extruded, with a tent on top"></canvas>
+          <span class="n">IV</span><code><a data-play="k[top] x[+z] C">k[top] x[+z] C</a></code><figcaption>Steps build on steps.</figcaption></figure>
+        <figure class="plate"><canvas data-word="h[inner] i[+x|-x](0.3) x[+x](1) x[-x](1) C" aria-label="A ring with a hole through it"></canvas>
+          <span class="n">V</span><code><a data-play="h[inner] i[+x|-x](0.3) x[+x](1) x[-x](1) C">h[inner] … C</a></code><figcaption>Some make holes.</figcaption></figure>
+        <figure class="plate"><canvas data-word="t I" aria-label="A truncated icosahedron, a football"></canvas>
+          <span class="n">VI</span><code><a data-play="t I">t I</a></code><figcaption>Conway's operators are letters too.</figcaption></figure>
       </div>
-      <div class="view-row">
-        <div class="seg" id="colour-by" role="group" aria-label="Colour faces by">
-          <button type="button" data-mode="role" aria-pressed="true">Role</button>
-          <button type="button" data-mode="label" aria-pressed="false">Label</button>
-          <button type="button" data-mode="step" aria-pressed="false">Step</button>
-        </div>
-        <div class="legend" id="legend"></div>
+      <div class="key">
+        <span><i class="g sq"></i> tops, rims</span>
+        <span><i class="g ci"></i> sides, tubes</span>
+        <span><i class="g tri"></i> tents, insides, corners</span>
+        <span><i class="g wh"></i> the seed</span>
       </div>
-    </div>
-  </section>
-</main>
-<div class="toast" id="toast" hidden></div>
+    </section>
 
-<script type="module" src="app.js"></script>
+    <section>
+      <div class="onward">
+        <div><a href="/tour/">The tour</a><span>the language in twelve figures</span></div>
+        <div><a href="/cheatsheet/">The cheatsheet</a><span>everything, on one page</span></div>
+        <div><a href="/play/">The playground</a><span>write words, see shapes</span></div>
+      </div>
+    </section>
+  </main>
+</div>
 </body>
 </html>

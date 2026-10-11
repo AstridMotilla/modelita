@@ -1,6 +1,8 @@
-// node web/check-page.mjs: the playground's own logic (site/lang.js) against
-// the real engine. Every example runs without errors, every step of every
-// word builds, and programs survive the trip through a link.
+// node web/check-page.mjs: the site's own logic (site/lang.js) against the
+// real engine. Every example runs without errors, every step of every word
+// builds, programs survive the trip through a link, and every figure and
+// playground link on every page builds a shape.
+import { readFileSync, readdirSync } from "node:fs";
 import Modelita from "./site/modelita.js";
 import { EXAMPLES, classify, tokenize, buildSteps, encode, decode } from "./site/lang.js";
 
@@ -37,5 +39,20 @@ for (const text of [...Object.values(EXAMPLES), "", "C", "x[+z] C ; ünïcödé 
   check((await decode(code)) === text, `link round trip of ${JSON.stringify(text.slice(0, 30))}`);
 }
 
-console.log(failures ? `${failures} page checks failed` : `page checks pass (${words} words, every step)`);
+// The figures (data-word) and playground links (data-play) written into the pages.
+const unescape = s => s.replace(/&#10;/g, "\n").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+const pages = readdirSync(new URL("./site/", import.meta.url), { recursive: true }).filter(f => f.endsWith(".html"));
+let figures = 0;
+for (const page of pages) {
+  const html = readFileSync(new URL("./site/" + page, import.meta.url), "utf8");
+  for (const [, attr, value] of html.matchAll(/data-(word|play)="([^"]*)"/g)) {
+    const results = run(unescape(value));
+    const last = results.at(-1);
+    check(last?.kind === "shape" && results.every(r => r.kind !== "error"),
+          `${page}: data-${attr}="${value}": ${results.filter(r => r.kind === "error").map(r => r.message).join("; ") || last?.kind}`);
+    figures++;
+  }
+}
+
+console.log(failures ? `${failures} page checks failed` : `page checks pass (${words} words, every step; ${figures} figures and links on ${pages.length} pages)`);
 process.exit(failures ? 1 : 0);

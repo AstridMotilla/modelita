@@ -30,12 +30,14 @@ serve:
 
 .PHONY: all container check serve
 
-# The link preview, named by a fingerprint of its contents so that apps
-# which cache previews (Discord, Slack, X) fetch it again when it changes.
-og: og.svg
+# The link preview: og.mjs draws it (the tower is engine output), and the PNG
+# is named by a fingerprint of its contents so that apps which cache previews
+# (Discord, Slack, X) fetch it again when it changes. Every page points at it.
+og: og.mjs site/modelita.js
+	node og.mjs > og.svg
 	rm -f site/og-*.png
 	inkscape og.svg --export-type=png --export-filename=site/og.png
 	h=$$(sha256sum site/og.png | cut -c1-8); mv site/og.png site/og-$$h.png; \
-	sed -i "s|og-[0-9a-f]*\.png|og-$$h.png|" site/index.html
+	sed -i "s|og-[0-9a-f]*\.png|og-$$h.png|" site/index.html site/*/index.html
 
 .PHONY: og

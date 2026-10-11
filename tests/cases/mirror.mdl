@@ -1,0 +1,8 @@
+; mirror: the shape joined to its reflection across the seam (SPEC.md §5.4)
+mirror[+z] C                                  ; one face: a box twice as tall
+half = x[+x&side](1.5) x[+z](2) C              ; a post and half a lintel
+mirror[+x&top] half                           ; an arch: the seam is the lintel's end
+mirror[-x] half                               ; two faces in one plane: a T
+mirror[+x|+z] C                               ; two faces at an angle: the plane runs between them
+mirror[+x]{copy} x[+x] C                      ; the copies are made by the step: labelled, and new
+x[new](0.5) mirror[+x] x[+x] C

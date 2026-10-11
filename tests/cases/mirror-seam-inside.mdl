@@ -1,0 +1,2 @@
+; A seam with a corner inside it: that corner is used by no face afterwards, and goes.
+mirror[tent] k[+z](0.5) C

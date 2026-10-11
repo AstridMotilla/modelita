@@ -41,8 +41,25 @@ half = x[+x&side](1.5) x[+z](2) C     ; a post and half a lintel
 mirror[+x&top] half                   ; the seam is the lintel's end
 k[top](0.5) mirror[+x&top] half       ; the copies keep their roles
 mirror[-z] Y6                         ; a pyramid and its reflection: a diamond`,
+  "City": `; A small city, in one body. Lay out one block of four lots, mirror it
+; into a grid of sixteen, then build: every lot of a kind is built by the
+; same steps, because mirror's copies keep their labels.
+
+; Four lots on a slab: the seed's top, and the tops of three extensions.
+block = lift[+y](2){north} x[+x](2){east} C(2, 2, 0.2)
+grid = mirror[-y] mirror[-x] block
+lots = i[+z](0.2) grid                    ; each lot's rim is street
+
+; What goes on each kind of lot
+houses  = k[house&top](0.5) x[inner&north&!east](0.6){house}
+offices = x[office&inner](0.4) i[office&top](0.15) x[inner&east&!north](1.4){office}
+towers  = k[tower&top](0.4) x[tower&inner](1) i[tower&top](0.2) x[tower&inner](1.2) i[tower&top](0.15) x[inner&north&east](2.2){tower}
+parks   = k[inner&!north&!east](0.15)
+
+city = parks towers offices houses lots
+city`,
 };
-export const FIRST_LINE = { "Tower": 6 };
+export const FIRST_LINE = { "Tower": 6, "City": 16 };
 
 // --- reading lines (only to know what each line is; the engine does the rest) ------------
 export function classify(line) {

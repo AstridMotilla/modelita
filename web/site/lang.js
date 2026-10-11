@@ -91,8 +91,53 @@ trees = array(6, 0, 2) move(5.8, -5, 0.5) tree           ; a line of trees
 
 city = ground + spin(2) row + ring + centre + spin(2) trees
 city`,
+  "Hill town": `; A hill town: a terraced hill inside a round wall with four gates, rings
+; of houses facing outwards, twisted towers, stairs up every side, a domed
+; church on top, and a forest around it all. Separate bodies placed with
+; move, spin and array; reusable steps take the part they build on.
+
+; The land: one step, inset and raise, repeated up the hill.
+ground = P36(15, 0.2)
+tier[s](h) = x[new&inner](h) i[s](0.3)
+hill = move(0, 0, 0.3) tier[new&top](0.6)^2 tier[+z](0.6) P24(10, 0.4)
+
+; The wall is a ring with a bridged hole; a gate is half an arch, mirrored.
+wall = move(0, 0, 0.55) h[inner] i[+z|-z](0.05) P24(10.6, 0.9)
+half = x[+x&side](0.5) x[+z](1.2) C(0.6, 1.4, 0.6)
+gates = spin(4) move(9.8, 0, 0.4) turn(90) mirror[+x&top] half
+
+; Houses in three rings, each its own size, count and phase.
+house(w, h) = k[top](0.35) x[+z](h) C(w, 0.7, 0.3)
+outer = spin(26) move(8.54, 1.04, 0.65) house(0.9, 0.3)
+middle = spin(20) move(7.51, 1.19, 0.65) house(0.7, 0.5)
+upper = spin(16) move(5.69, 1.13, 1.25) turn(90) house(1.1, 0.4)
+
+; Towers: two storeys, a twisted lid, a tapered spire.
+storey[s](h) = x[new&inner](h) i[s](0.2)
+spire[s] = k[s](1.2) stretch[s](0.6, 0.6) x[s](0.4)
+tower = spire[top] turn[top](30) storey[new&top](1.2) storey[top](1) x[+z](1.6) C(0.8, 0.8, 0.3)
+towers = spin(6) move(3.96, 1.06, 1.85) tower
+
+; Stairs up every side, from the gates to the top.
+stairs = spin(4) array(14, -0.44, 0, 0.13) move(9.5, 0, 0.55) C(0.45, 1.1, 0.12)
+
+; The church: a nave, a drum, a dome from Conway's t I, a lantern.
+nave = move(0, 0, 2.5) k[top](0.6) x[+z](1.2) C(3, 1.4, 0.4)
+drum = move(0, 0, 4.1) x[+z](0.8) P12(0.8, 0.3)
+dome = move(0, 0, 5.05) stretch(0.6, 0.6, 0.6) t I
+lantern = move(0, 0, 6.1) k[top](1) x[+z](0.3) P8(0.2, 0.2)
+church = nave + drum + dome + lantern
+
+; The forest, in three rings of different trees.
+tree(r, h) = k[top](h) x[inner](0.2) i[+z](-3) P7(r, 0.6)
+pines = spin(30) move(12.2, 0, 0.4) tree(0.13, 1.2)
+firs = spin(23) move(13.57, 0.95, 0.4) tree(0.17, 1.6)
+shrubs = spin(17) move(11.51, 1.41, 0.4) tree(0.1, 0.9)
+
+town = ground + hill + wall + gates + outer + middle + upper + towers + stairs + church + pines + firs + shrubs
+town`,
 };
-export const FIRST_LINE = { "Tower": 6, "City": 17, "City 2": 12 };
+export const FIRST_LINE = { "Tower": 6, "City": 17, "City 2": 12, "Hill town": 44 };
 
 // --- reading lines (only to know what each line is; the engine does the rest) ------------
 export function classify(line) {

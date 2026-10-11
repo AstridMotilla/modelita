@@ -13,6 +13,11 @@ const check = (ok, what) => { if (!ok) { failures++; console.log("FAIL", what); 
 
 check(JSON.stringify(tokenize("k[top](0.8) storey(1.2, 3)^3  x[a | b]{roof} C")) ===
       JSON.stringify(["k[top](0.8)", "storey(1.2, 3)^3", "x[a | b]{roof}", "C"]), "tokenize keeps brackets together");
+{
+  const steps = buildSteps(run, [], tokenize("x[top] C + move(3) T"), "");
+  check(JSON.stringify(steps.map(s => s.token)) === JSON.stringify(["T", "move(3)", "x[top] C +"]) &&
+        steps.every(s => s.result.kind === "shape"), "steps of a word with +: the last term step by step, then each term whole");
+}
 check(classify("storey(h, r) = x(h) ; c").kind === "define" && classify("storey(h, r) = x(h)").params.length === 2, "classify a definition");
 check(classify('export "a.obj" x C').word === "x C", "classify an export");
 check(classify("  ; only a comment").kind === "blank", "classify a comment");

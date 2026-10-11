@@ -27,7 +27,8 @@ This spec aims for:
    faces when an earlier step changes.
 4. **Continuity.** Small changes to numbers give small changes to the shape.
 5. **A small core.** Six of Conway's operators, nine modelling operators,
-   `mirror` and three transforms. Everything else is defined from them.
+   `mirror`, three transforms and two ways to copy. Everything else is
+   defined from them.
 
 ---
 
@@ -51,7 +52,11 @@ Vertex and face numbers count from 0.
   `b→a` belongs to exactly one other face;
 - every vertex is used by at least one face.
 
-Holes (genus > 0) are allowed. An implementation checks the invariant
+Holes (genus > 0) are allowed, and so is a shape in several pieces. Each
+piece is a **body**: a maximal set of faces connected through shared
+vertices. `house + move(3) tree` (§3) is one shape with two bodies.
+
+An implementation checks the invariant
 after every step. A violation is an `internal` error: a bug in the
 implementation, never in the word.
 
@@ -176,6 +181,21 @@ A word that ends in a shape (a seed, or a name for a shape) **is a shape**.
 A word that ends in an operator **is an operator**: a reusable sequence of
 steps. A shape anywhere but last is a `kind` error.
 
+**Side by side.** A word may be several *terms* separated by `+`, a token
+of its own with whitespace after it:
+
+```
+house + move(3, 1, 0) tree        ; a house and a tree: two bodies
+```
+
+Each term is read as a word on its own and must be a shape; a term that is
+an operator is a `kind` error, and an empty term is a `syntax` error. The
+shapes are put together left to right: the vertices of the first, then
+those of the second numbered after them, and the same for faces. Faces
+keep their roles, labels and steps, and the step counter is the larger of
+the two. `+` joins whole words only: to apply steps to the result, give it
+a name (§6).
+
 ## 4. Steps, roles and labels
 
 Each application of a primitive operator is a **step**. It raises the
@@ -265,8 +285,9 @@ run along it). Otherwise it is a `precondition` error. Let `a = A`, and `b` =
 `B`'s corners reversed. Choose the turn `k` in 0 … n−1 that minimises
 `Σᵢ |p(aᵢ) − p(b₍ᵢ₊ₖ₎ mod n)|²`, taking the smallest k on a tie, and let
 `cᵢ = b₍ᵢ₊ₖ₎ mod n`. A and B are removed. Made: `aᵢ, aᵢ₊₁, cᵢ₊₁, cᵢ` for
-each i (role `tube`, labels shared by A and B). It adds one handle, and it
-is the only operator that changes the genus.
+each i (role `tube`, labels shared by A and B). If A and B are on one
+body it adds a handle, and it is the only operator that changes the genus.
+If they are on two bodies it joins them into one.
 
 **lift** — Pushes each connected piece of picked faces out as one block.
 For each vertex `v` in order that is used by a picked face, and for each
@@ -490,8 +511,40 @@ vertices, at `p`, with `d = p − c`:
   - `Ry(a)(d) = (d.x·cos a + d.z·sin a, d.y, −d.x·sin a + d.z·cos a)`
   - `Rz(a)(d) = (d.x·cos a − d.y·sin a, d.x·sin a + d.y·cos a, d.z)`
 
-The whole shape is one region, so `turn` and `stretch` without a selector
-act about its centre.
+Each body is a region of its own, so `turn` and `stretch` without a
+selector act on each body about its own centre: `turn(30) array(5, 3) C`
+turns five boxes where they stand. There is no way yet to turn several
+bodies about one centre.
+
+### 5.6 Copies
+
+| Name | Letter | Numbers (defaults) | Makes |
+|---|---|---|---|
+| `array` | — | n, x, y, z (2, 1, 0, 0) | copies, keeping their roles |
+| `spin` | — | n (6) | copies, keeping their roles |
+
+```
+array(5, 3, 0, 0) house           ; five houses in a row
+spin(8) move(5, 0, 0) tower       ; eight towers in a circle of radius 5
+```
+
+Both make `n − 1` copies of the whole shape, so that there are `n` in all.
+A selector that doesn't pick every face is a `precondition` error, and `n`
+must be a whole number of at least 1, otherwise it is a `range` error. If
+the result would have more faces than the limit (§9), that is a `limit`
+error, found before the copies are made.
+
+Copy `k` (k = 1 … n − 1) has every vertex of the shape at a new point:
+
+- **array**: `p + k·(x, y, z)`;
+- **spin**: `p` turned about the z axis through the origin by `2πk/n`
+  radians, as `Rz` in §5.5. Turning about the origin, not the shape's
+  centre, is what places copies around a point: move the shape out first.
+
+The output is the shape's vertices, then copy 1's in the same order, then
+copy 2's, and so on; and the same for faces. A copy's face has the corners
+of its original renumbered to the copy's vertices, its role and labels,
+and is made by this step.
 
 ## 6. Definitions
 
@@ -571,7 +624,7 @@ When a statement fails, it produces an error with one of these categories:
 |---|---|
 | `syntax` | the line can't be read, or a selector is given to something other than a primitive operator |
 | `name` | an undefined name, a reserved or duplicate definition, a missing parameter, or a forbidden label |
-| `kind` | a shape that isn't last in its word, or a repeated shape |
+| `kind` | a shape that isn't last in its word, a repeated shape, or an operator joined with `+` |
 | `arity` | too many numbers, or a defined name given the wrong number of arguments |
 | `range` | a number outside what the operator or seed allows |
 | `precondition` | the selector picks something the operator can't work with (`bridge`, `reflect`) |
@@ -602,11 +655,9 @@ tolerance of 1e-9; everything else must match exactly.
 
 ## 11. Not in v1
 
-- several bodies, unions and other booleans;
+- unions and other booleans: bodies may overlap, but are never merged;
 - subdivision and curves;
-- symmetry beyond `mirror`: rotations, and arrays beyond `^n`;
+- turning several bodies about one centre;
 - selectors as parameters.
 
-The likely order for adding them: one subdivision operator, several
-bodies. Rotations and arrays of copies come most naturally with several
-bodies, so they wait for them.
+The likely next addition is one subdivision operator.

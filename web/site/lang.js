@@ -50,6 +50,16 @@ stretch[top](0.3, 0.3) x[+z](2) C       ; tapered
 move[top](1.5) x[+z](3) C               ; leaning
 twist = turn[top](15) x[top](0.5)
 twist^8 x[+z](0.5) C(1.4, 1.4, 0.4)     ; a twisted column, a storey at a time`,
+  "Bodies": `; A shape can be in several pieces, its bodies. + puts shapes side by
+; side, and array and spin make copies.
+house = k[top](0.6) x[+z](0.8) C
+tree = k[top](1.4) x[inner](0.2) i[+z](-3) P8(0.15, 0.8)
+house + move(2.5, 1, -0.6) tree           ; a house and a tree
+array(4, 3) house                         ; a row of houses
+spin(8) move(4) house                     ; a ring of them, about the origin
+turn(30) array(4, 3) house                ; each body turns where it stands
+yard = house{home} + move(2.5, 1, -0.6) tree{tree}
+move[tree](0, 0, 1) yard                  ; labels pick bodies`,
   "City": `; A small city, in one body. Lay out one block of four lots, mirror it
 ; into a grid of sixteen, then build: every lot of a kind is built by the
 ; same steps, because mirror's copies keep their labels.
@@ -67,8 +77,21 @@ parks   = k[inner&!north&!east](0.15)
 
 city = parks towers offices houses lots
 city`,
+  "City 2": `; A free city: separate buildings, placed with move, array and spin.
+ground = C(14, 14, 0.2)
+house = k[top](0.5) x[+z](0.6) C(1.2, 1, 0.6)
+tower(h) = k[top](0.3) x[top](0.5) i[top](0.2) x[+z](h) C(1.2, 1.2, 0.4)
+tree = k[top](1.2) x[inner](0.15) i[+z](-3) P8(0.12, 0.8)
+
+row = array(5, 2.2) move(-4.4, -5.5, 0.4) house          ; a street of houses
+ring = spin(6) move(3.2, 0, 0.3) tower(2.5)              ; towers around the square
+centre = move(0, 0, 0.3) turn(45) tower(5)            ; and one in the middle, turned
+trees = array(6, 0, 2) move(5.8, -5, 0.5) tree           ; a line of trees
+
+city = ground + spin(2) row + ring + centre + spin(2) trees
+city`,
 };
-export const FIRST_LINE = { "Tower": 6, "City": 16 };
+export const FIRST_LINE = { "Tower": 6, "City": 16, "City 2": 12 };
 
 // --- reading lines (only to know what each line is; the engine does the rest) ------------
 export function classify(line) {
@@ -98,10 +121,17 @@ export function tokenize(word) {
 
 export function buildSteps(run, base, tokens, seed) {
   // Line k after the base: the last k tokens, i.e. the shape after k steps.
-  const words = tokens.map((_, k) => tokens.slice(tokens.length - 1 - k).join(" ") + seed);
-  const results = run(base.concat(words).join("\n"));
+  // In a word of several terms joined by +, the last term goes step by step,
+  // and then each term to its left is added whole, as one step.
+  const terms = [[]];
+  for (const t of tokens) t === "+" ? terms.push([]) : terms.at(-1).push(t);
+  const last = terms.at(-1);
+  const steps = last.map((_, k) => ({ token: last[last.length - 1 - k], word: last.slice(last.length - 1 - k).join(" ") + seed }));
+  for (let j = terms.length - 2; j >= 0; j--)
+    steps.push({ token: terms[j].join(" ") + " +", word: terms.slice(j).map(t => t.join(" ")).join(" + ") + seed });
+  const results = run(base.concat(steps.map(s => s.word)).join("\n"));
   const at = new Map(results.map(r => [r.line, r]));
-  return words.map((w, k) => ({ token: tokens[tokens.length - 1 - k], result: at.get(base.length + 1 + k) }));
+  return steps.map((s, k) => ({ token: s.token, result: at.get(base.length + 1 + k) }));
 }
 
 // The program travels in the link: deflated, then base64url, which an

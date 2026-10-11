@@ -1,0 +1,7 @@
+; + joins shapes, with a term on each side
+C +
++ C
+C + x
+x + C
+C + + T
+C+T

@@ -1,0 +1,4 @@
+; spin: n copies about the vertical axis through the origin (SPEC.md §5.6)
+spin(4) move(3) C                             ; four boxes around the origin
+spin move(2) T                                ; six, by default
+spin(3) C                                     ; about the origin: copies of a centred shape overlap it

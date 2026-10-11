@@ -1162,6 +1162,56 @@ static mdl__shape *mdl__mirror(mdl__ctx *x, const mdl__shape *s, const char *pic
     return mdl__finish(&b, s);
 }
 
+/* --- copies ------------------------------------------------------------------------------------------- */
+
+typedef mdl__v3 (*mdl__place_fn)(int k, mdl__v3 p, const double *num);
+
+static mdl__shape *mdl__copies(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num, const char *what, mdl__place_fn place) {
+    /* The shape and n - 1 copies of it, copy k with every point at place(k, p). Copies
+       keep their roles and labels and are made by this step. */
+    for (int i = 0; i < s->nf; i++)
+        if (!picked[i]) mdl__fail(x, MDL_ERR_PRECONDITION, "%s copies the whole shape; leave out the selector", what);
+    double n = num[0];
+    if (!(n >= 1) || n != floor(n))
+        mdl__fail(x, MDL_ERR_RANGE, "%s needs a whole number of copies, at least 1, not %g", what, n);
+    if (n * s->nf > MDL_MAX_FACES)     /* checked before building them */
+        mdl__fail(x, MDL_ERR_LIMIT, "%s makes %.0f faces, more than the limit of %d", what, n * s->nf, MDL_MAX_FACES);
+    int count = (int)n;
+    mdl__build b; mdl__build_from(&b, x, s);
+    for (int k = 1; k < count; k++)
+        for (int v = 0; v < s->nv; v++) mdl__vertex(&b, place(k, s->v[v], num));
+    for (int i = 0; i < s->nf; i++) mdl__keep(&b, &s->f[i]);
+    for (int k = 1; k < count; k++)
+        for (int i = 0; i < s->nf; i++) {
+            const mdl__face *f = &s->f[i];
+            int *q = (int *)mdl__alloc(x->a, sizeof(int) * (size_t)f->n);
+            for (int m = 0; m < f->n; m++) q[m] = f->c[m] + k * s->nv;
+            mdl__face_add(&b, q, f->n, f->role, f->labels, s->step + 1);
+        }
+    return mdl__finish(&b, s);
+}
+
+static mdl__v3 mdl__array_place(int k, mdl__v3 p, const double *num) {
+    mdl__v3 r = {p.x + k * num[1], p.y + k * num[2], p.z + k * num[3]};
+    return r;
+}
+
+static mdl__shape *mdl__array(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num) {
+    /* n copies in a row, each moved (x, y, z) from the one before. */
+    return mdl__copies(x, s, picked, num, "array", mdl__array_place);
+}
+
+static mdl__v3 mdl__spin_place(int k, mdl__v3 p, const double *num) {
+    double a = 2 * M_PI * k / num[0];
+    mdl__v3 r = {p.x * cos(a) - p.y * sin(a), p.x * sin(a) + p.y * cos(a), p.z};
+    return r;
+}
+
+static mdl__shape *mdl__spin(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num) {
+    /* n copies turned evenly about the vertical axis through the origin. */
+    return mdl__copies(x, s, picked, num, "spin", mdl__spin_place);
+}
+
 /* Conway's other letters are his identities: the rightmost step acts on the
    picked faces, each step to its left on the faces the one before made. */
 static mdl__shape *mdl__on_made(mdl__ctx *x, const mdl__shape *s, const char *picked, const mdl__opfn *steps, int n) {
@@ -1187,7 +1237,7 @@ MDL__DERIVED(mdl__meta, mdl__kis, mdl__dual, mdl__ambo)
 MDL__DERIVED(mdl__bevel, mdl__truncate, mdl__ambo)
 MDL__DERIVED(mdl__snub, mdl__dual, mdl__gyro)
 
-typedef struct { const char *name, *letter; mdl__opfn fn; int nnum; double num[3]; } mdl__operator;   /* num: the defaults */
+typedef struct { const char *name, *letter; mdl__opfn fn; int nnum; double num[4]; } mdl__operator;   /* num: the defaults */
 
 static const mdl__operator mdl__operators[] = {
     {"dual", "d", mdl__dual, 0, {0}}, {"ambo", "a", mdl__ambo, 0, {0}},
@@ -1204,6 +1254,7 @@ static const mdl__operator mdl__operators[] = {
     {"mirror", NULL, mdl__mirror, 0, {0}},
     {"move", NULL, mdl__move_by, 3, {0, 0, 0}}, {"turn", NULL, mdl__turn, 3, {0, 0, 0}},
     {"stretch", NULL, mdl__stretch, 3, {1, 1, 1}},
+    {"array", NULL, mdl__array, 4, {2, 1, 0, 0}}, {"spin", NULL, mdl__spin, 1, {6}},
 };
 #define MDL__NOPS ((int)(sizeof mdl__operators / sizeof *mdl__operators))
 
@@ -1561,7 +1612,7 @@ typedef struct {
     int count;
 } mdl__token;
 
-typedef struct { mdl__token *items; int n; } mdl__word_ast;
+typedef struct { mdl__token *items; int n; int *terms; int nterms; } mdl__word_ast;   /* terms: where each part between + starts */
 
 typedef struct {
     mdl_statement kind;
@@ -1670,18 +1721,31 @@ static const char *mdl__parse_token(mdl__ctx *x, const char *p, mdl__token *t) {
 }
 
 static mdl__word_ast mdl__parse_word(mdl__ctx *x, const char *text) {
+    /* Tokens, and the terms they fall into: the parts between top-level + signs. */
     MDL__VEC(mdl__token) toks = {0, 0, 0};
+    MDL__VEC(int) terms = {0, 0, 0};
     const char *p = text;
     while (mdl__space(*p)) p++;
+    MDL__PUSH(x->a, terms, 0);
     while (*p) {
+        if (*p == '+' && (!p[1] || mdl__space(p[1]))) {
+            if (toks.n == terms.items[terms.n - 1])
+                mdl__fail(x, MDL_ERR_SYNTAX, "a word needs at least a seed, like C, on each side of +");
+            MDL__PUSH(x->a, terms, toks.n);
+            p++;
+            while (mdl__space(*p)) p++;
+            continue;
+        }
         mdl__token t;
         p = mdl__parse_token(x, p, &t);
         if (*p && !mdl__space(*p)) mdl__fail(x, MDL_ERR_SYNTAX, "expected a space before \"%s\"", p);
         MDL__PUSH(x->a, toks, t);
         while (mdl__space(*p)) p++;
     }
-    if (!toks.n) mdl__fail(x, MDL_ERR_SYNTAX, "a word needs at least a seed, like C");
-    mdl__word_ast w = {toks.items, toks.n};
+    if (toks.n == terms.items[terms.n - 1])
+        mdl__fail(x, MDL_ERR_SYNTAX, terms.n > 1 ? "a word needs at least a seed, like C, on each side of +"
+                                                 : "a word needs at least a seed, like C");
+    mdl__word_ast w = {toks.items, toks.n, terms.items, terms.n};
     return w;
 }
 
@@ -1778,7 +1842,7 @@ static int mdl__parse_line(mdl__ctx *x, const char *line, mdl__stmt *st) {
 enum { OP_PRIM, OP_SEQ, OP_LABEL, OP_REPEAT };
 typedef struct mdl__op {
     int kind;
-    const mdl__operator *prim; const mdl__sel *sel; double num[3];
+    const mdl__operator *prim; const mdl__sel *sel; double num[4];
     struct mdl__op **ops; int nops;     /* OP_SEQ: applied in order */
     struct mdl__op *inner; const char *label; int count;
 } mdl__op;
@@ -1901,7 +1965,40 @@ static mdl__value mdl__token_value(mdl__ctx *x, const mdl__env *env, const mdl__
     return v;
 }
 
+static mdl__shape *mdl__side_by_side(mdl__ctx *x, const mdl__shape *a, const mdl__shape *b) {
+    /* a's vertices and faces, then b's. The step counter is the larger one. */
+    mdl__build out; mdl__build_from(&out, x, a);
+    for (int v = 0; v < b->nv; v++) mdl__vertex(&out, b->v[v]);
+    for (int i = 0; i < a->nf; i++) mdl__keep(&out, &a->f[i]);
+    for (int i = 0; i < b->nf; i++) {
+        const mdl__face *f = &b->f[i];
+        int *q = (int *)mdl__alloc(x->a, sizeof(int) * (size_t)f->n);
+        for (int k = 0; k < f->n; k++) q[k] = f->c[k] + a->nv;
+        mdl__face_add(&out, q, f->n, f->role, f->labels, f->step);
+    }
+    mdl__shape *s = (mdl__shape *)mdl__alloc(x->a, sizeof *s);
+    s->v = out.v.items; s->nv = out.v.n; s->f = out.f.items; s->nf = out.f.n;
+    s->step = a->step > b->step ? a->step : b->step;
+    return s;
+}
+
+static mdl__value mdl__eval_term(mdl__ctx *x, const mdl__env *env, const mdl__word_ast *w, const mdl__bindings *b);
+
 static mdl__value mdl__eval_word(mdl__ctx *x, const mdl__env *env, const mdl__word_ast *w, const mdl__bindings *b) {
+    /* One term is a word as before. Several are shapes side by side (SPEC.md §3). */
+    if (w->nterms <= 1) return mdl__eval_term(x, env, w, b);
+    mdl__value r = {NULL, NULL};
+    for (int k = 0; k < w->nterms; k++) {
+        int from = w->terms[k], to = k + 1 < w->nterms ? w->terms[k + 1] : w->n;
+        mdl__word_ast term = {w->items + from, to - from, NULL, 1};
+        mdl__value v = mdl__eval_term(x, env, &term, b);
+        if (!v.shape) mdl__fail(x, MDL_ERR_KIND, "+ puts shapes side by side, and %s is an operator", w->items[to - 1].head);
+        r.shape = r.shape ? mdl__side_by_side(x, r.shape, v.shape) : v.shape;
+    }
+    return r;
+}
+
+static mdl__value mdl__eval_term(mdl__ctx *x, const mdl__env *env, const mdl__word_ast *w, const mdl__bindings *b) {
     mdl__value *vs = (mdl__value *)mdl__alloc(x->a, sizeof(mdl__value) * (size_t)w->n);
     for (int i = 0; i < w->n; i++) vs[i] = mdl__token_value(x, env, &w->items[i], b);
     for (int i = 0; i < w->n - 1; i++)

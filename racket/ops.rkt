@@ -506,7 +506,9 @@
   (for* ([(f i) (in-indexed faces)] #:unless (vector-ref picked i) [e (pairs (face-corners f))])
     (when (and (seam? (car e)) (seam? (cdr e))
                (not (vector-ref picked (hash-ref owner (cons (cdr e) (car e))))))
-      (fail 'precondition "mirror: edge ~a-~a joins two corners of the seam outside it, so both halves would have it"
+      (fail 'precondition (string-append "mirror: edge ~a-~a joins two corners of the seam outside it, so both halves "
+                                         "would have it. Often this is a hidden wall between blocks extruded side by "
+                                         "side; lift pushes them out as one block")
             (car e) (cdr e))))
   ;; The mirror's plane: through the average of the seam's corners, across the sum of its normals.
   (define c (centroid (for/list ([v (in-range (vector-length seam))] #:when (seam? v)) (point s v))))

@@ -1133,7 +1133,9 @@ static mdl__shape *mdl__mirror(mdl__ctx *x, const mdl__shape *s, const char *pic
         for (int k = 0; k < s->f[i].n; k++) {
             int a = s->f[i].c[k], bb = s->f[i].c[(k + 1) % s->f[i].n];
             if (seam[a] && seam[bb] && !picked[mdl__twin(&owner, a, bb)])
-                mdl__fail(x, MDL_ERR_PRECONDITION, "mirror: edge %d-%d joins two corners of the seam outside it, so both halves would have it", a, bb);
+                mdl__fail(x, MDL_ERR_PRECONDITION, "mirror: edge %d-%d joins two corners of the seam outside it, so both halves "
+                                                   "would have it. Often this is a hidden wall between blocks extruded side by "
+                                                   "side; lift pushes them out as one block", a, bb);
         }
     }
     /* The mirror's plane: through the average of the seam's corners, across the sum of its normals. */

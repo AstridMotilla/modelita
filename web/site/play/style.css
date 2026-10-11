@@ -17,9 +17,10 @@
   --body: var(--text);
   --code-size: 13px;
   --code-line: 21px;
+  --hl-label: #9a6800;          /* Byrne's yellow, dark enough to read on white */
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent-soft: #3a321c; } }
-:root[data-theme="dark"] { --accent-soft: #3a321c; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent-soft: #3a321c; --hl-label: var(--yellow); } }
+:root[data-theme="dark"] { --accent-soft: #3a321c; --hl-label: var(--yellow); }
 
 html, body { height: 100%; }
 body {
@@ -71,16 +72,31 @@ main {
 .gutter .error .mark { color: var(--error); }
 .gutter .shape .mark { color: var(--ok); }
 .gutter .define .mark, .gutter .operator .mark { color: var(--muted); }
-.code { position: relative; flex: 1; min-width: 0; }
+.code { position: relative; flex: 1; min-width: 0; overflow: hidden; }
 .focus-bar {
   position: absolute; left: 0; right: 0; height: var(--code-line); background: var(--accent-soft);
   pointer-events: none; transform: translateY(0);
 }
-textarea#program {
-  position: absolute; inset: 0; width: 100%; height: 100%; resize: none; border: 0; margin: 0;
-  padding: 10px 12px; background: transparent; outline: none; white-space: pre; overflow: auto;
-  font: var(--code-size)/var(--code-line) var(--mono); tab-size: 2; caret-color: var(--accent);
+/* The text you type is transparent; the coloured copy behind it (lang.js highlight)
+   shows through, moved with the textarea's scroll. Same font, padding and tabs. */
+textarea#program, .highlight {
+  margin: 0; border: 0; padding: 10px 12px; white-space: pre; tab-size: 2;
+  font: var(--code-size)/var(--code-line) var(--mono);
 }
+textarea#program {
+  position: absolute; inset: 0; width: 100%; height: 100%; resize: none;
+  background: transparent; outline: none; overflow: auto;
+  color: transparent; caret-color: var(--fg);
+}
+textarea#program::selection { color: transparent; background: color-mix(in srgb, var(--blue) 22%, transparent); }
+.highlight { position: absolute; top: 0; left: 0; min-width: 100%; pointer-events: none; color: var(--fg); }
+.hl-op { color: var(--red); }
+.hl-sel { color: var(--blue); }
+.hl-label { color: var(--hl-label); }
+.hl-seed { font-weight: 500; }
+.hl-def { font-weight: 500; }
+.hl-num, .hl-punct, .hl-key, .hl-str { color: var(--muted); }
+.hl-cmt { color: var(--muted); font-style: italic; }
 
 .notes { flex: 0 1 auto; max-height: 30%; overflow: auto; padding: 10px 14px; border-bottom: 1px solid var(--line); }
 .notes:empty { display: none; }

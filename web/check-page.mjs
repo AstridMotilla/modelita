@@ -4,7 +4,7 @@
 // playground link on every page builds a shape.
 import { readFileSync, readdirSync } from "node:fs";
 import Modelita from "./site/modelita.js";
-import { EXAMPLES, classify, tokenize, buildSteps, encode, decode } from "./site/lang.js";
+import { EXAMPLES, classify, tokenize, buildSteps, encode, decode, highlight } from "./site/lang.js";
 
 const engine = await Modelita();
 const run = text => JSON.parse(engine.ccall("modelita_run", "string", ["string"], [text]));
@@ -39,6 +39,15 @@ for (const [name, text] of Object.entries(EXAMPLES)) {
     words++;
   });
 }
+
+// The coloured copy must hold exactly the text, or it drifts out of line with what's typed.
+const plain = html => html.replace(/<[^>]*>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+for (const text of [...Object.values(EXAMPLES), "export \"a;b.obj\" x C ; note", "<b>&amp; C", "a = + = ^ [ ( {"])
+  check(plain(highlight(text)) === text, `highlight keeps the text: ${JSON.stringify(text.slice(0, 30))}`);
+check(highlight("storey[part](h) = x[part](h) C ; c") ===
+      '<span class="hl-def">storey</span><span class="hl-sel">[part]</span><span class="hl-num">(h)</span> <span class="hl-punct">=</span> ' +
+      '<span class="hl-op">x</span><span class="hl-sel">[part]</span><span class="hl-num">(h)</span> <span class="hl-seed">C</span> <span class="hl-cmt">; c</span>',
+      "highlight a definition");
 
 for (const text of [...Object.values(EXAMPLES), "", "C", "x[+z] C ; ünïcödé {}#&?=", "x".repeat(5000)]) {
   const code = await encode(text);

@@ -1,5 +1,5 @@
 import Modelita from "/modelita.js";
-import { EXAMPLES, FIRST_LINE, classify, tokenize, buildSteps, encode, decode } from "/lang.js";
+import { EXAMPLES, FIRST_LINE, classify, tokenize, buildSteps, encode, decode, highlight } from "/lang.js";
 
 
 // --- the engine --------------------------------------------------------------------------
@@ -525,8 +525,15 @@ function hover(e) {
 }
 
 // --- the editor ------------------------------------------------------------------------------
+const highlighted = document.getElementById("highlight");
+function paint() {
+  // The trailing newline keeps the copy as tall as the text when it ends in an empty line.
+  highlighted.innerHTML = highlight(textarea.value) + "\n";
+  syncScroll();
+}
 function syncScroll() {
   gutter.scrollTop = textarea.scrollTop;
+  highlighted.style.transform = `translate(${-textarea.scrollLeft}px, ${-textarea.scrollTop}px)`;
   moveFocusBar(state.focusLine);
 }
 function moveFocusBar(index) {
@@ -535,7 +542,7 @@ function moveFocusBar(index) {
 }
 textarea.addEventListener("scroll", syncScroll);
 let timer = 0;
-textarea.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(runAll, 160); });
+textarea.addEventListener("input", () => { paint(); clearTimeout(timer); timer = setTimeout(runAll, 160); });
 for (const ev of ["click", "keyup", "focus"]) textarea.addEventListener(ev, () => updateFocus(false));
 textarea.addEventListener("keydown", e => {
   if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); document.execCommand?.("insertText", false, "  ") || textarea.setRangeText("  ", textarea.selectionStart, textarea.selectionEnd, "end"); }
@@ -548,6 +555,7 @@ examples.addEventListener("change", () => loadProgram(EXAMPLES[examples.value], 
 
 function loadProgram(text, line) {
   textarea.value = text;
+  paint();
   state.focusLine = -1;
   runAll();
   goToLine(Math.min(line, text.split("\n").length - 1));

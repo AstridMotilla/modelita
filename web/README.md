@@ -31,7 +31,7 @@ so a page can't show a word the language doesn't accept.
 
 At `/play/`:
 
-- **Editor**: runs as you type. The gutter marks each line: `●` a shape,
+- **Editor**: highlighted in the site's colours (operators red, selectors blue, labels yellow, comments grey) and runs as you type. The gutter marks each line: `●` a shape,
   `○` an operator, `=` a definition, `×` an error (listed below the editor;
   click one to jump to it).
 - **View**: shows the word on the cursor's line. Drag to turn it, scroll or
@@ -57,7 +57,7 @@ At `/play/`:
 | `site/figures.js` | draws the figures on the pages and fills in the playground links |
 | `site/forward.js` | sends old shared links (`/#...`) to the playground |
 | `site/play/` | the playground: `index.html`, `style.css` and `app.js`, the editor, the view and the controls |
-| `site/lang.js` | what the pages know about Modelita text: line kinds, tokens, steps, links |
+| `site/lang.js` | what the pages know about Modelita text: line kinds, tokens, steps, highlighting, links |
 | `site/modelita.js`, `modelita.wasm` | the engine: `modelita_web.c` + `../c/modelita.h` built with Emscripten |
 | `site/og-*.png`, `favicon.svg` | the link preview and the tab icon. The preview's name carries a fingerprint of its contents, so Discord, Slack and X fetch it again when it changes |
 | `og.mjs`, `og.svg` | the link preview: `og.mjs` draws the tower from the engine into `og.svg`, and `make og` exports that to `site/og-<fingerprint>.png` and points every page at it (needs Inkscape and the Archivo and DM Mono fonts) |

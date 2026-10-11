@@ -181,6 +181,47 @@ export function buildSteps(run, base, tokens, seed) {
   return steps.map((s, k) => ({ token: s.token, result: at.get(base.length + 1 + k) }));
 }
 
+// --- highlighting ----------------------------------------------------------------------
+// The editor draws the program twice: the text you type, made transparent,
+// over a copy with colours. highlight() makes that copy, and only wraps text
+// in spans, so the two stay aligned character for character.
+const OPERATORS = new Set(("dual d ambo a truncate t kis k gyro g reflect r needle n zip z join j expand e " +
+  "ortho o meta m bevel b snub s extrude x inset i bridge h lift scale push merge flip mirror " +
+  "move turn stretch array spin").split(" "));
+const SEED = /^(?:[CTOID]|[PAY][0-9]+)$/;
+const TOKEN = /([A-Za-z][A-Za-z0-9_-]*)(\[[^\]]*\])?(\([^)]*\))?(\{[^}]*\})?(\^[0-9]+)?/y;
+const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+const span = (cls, text) => text ? `<span class="hl-${cls}">${esc(text)}</span>` : "";
+
+export function highlight(text) {
+  return text.split("\n").map(line => {
+    const semi = line.indexOf(";");
+    const code = semi < 0 ? line : line.slice(0, semi);
+    const comment = semi < 0 ? "" : line.slice(semi);
+    let out = "", i = 0;
+    const lead = code.match(/^\s*(use|gallery|export)\b/);
+    if (lead) { out += esc(code.slice(0, lead.index + lead[0].length - lead[1].length)) + span("key", lead[1]); i = lead[0].length; }
+    const define = code.match(/^\s*[A-Za-z][A-Za-z0-9_-]*\s*(?:\[[^\]]*\])?\s*(?:\([^)]*\))?\s*=/);
+    let defining = Boolean(define);
+    while (i < code.length) {
+      const c = code[i];
+      if (c === "\"") {
+        const end = code.indexOf("\"", i + 1), stop = end < 0 ? code.length : end + 1;
+        out += span("str", code.slice(i, stop)); i = stop; continue;
+      }
+      if (c === "=" || (c === "+" && /\s|$/.test(code[i + 1] ?? ""))) { out += span("punct", c); defining = false; i++; continue; }
+      TOKEN.lastIndex = i;
+      const m = TOKEN.exec(code);
+      if (!m) { out += esc(c); i++; continue; }
+      const [, head, sel, nums, label, count] = m;
+      const kind = defining ? "def" : OPERATORS.has(head) ? "op" : SEED.test(head) ? "seed" : "name";
+      out += span(kind, head) + span("sel", sel) + span("num", nums) + span("label", label) + span("punct", count);
+      i = TOKEN.lastIndex;
+    }
+    return out + span("cmt", comment);
+  }).join("\n");
+}
+
 // The program travels in the link: deflated, then base64url, which an
 // artifact link passes through as a plain #anchor.
 export async function encode(text) {

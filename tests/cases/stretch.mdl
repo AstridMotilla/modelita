@@ -1,0 +1,5 @@
+; stretch: each region stretched about its centre, along each axis (SPEC.md §5.5)
+stretch(2, 1, 0.5) C                          ; the whole shape
+stretch(3) move(1, 1, 1) C                    ; about its own centre; numbers left out are 1
+stretch[top](0.4, 0.4) x[+z](2) C             ; tapered
+stretch(1, 1, 0) C                            ; flat is allowed: still a valid shape

@@ -92,6 +92,14 @@
         <div class="ops">
           <div class="op"><canvas data-focus="last" data-word="mirror[+x&amp;top] x[+x&amp;side](1.5) x[+z](2) C" aria-label="Mirror"></canvas><div><code><a data-play="mirror[+x&amp;top] x[+x&amp;side](1.5) x[+z](2) C">mirror[seam]</a></code><p>join the shape to its reflection across the seam: build half, get the whole</p></div></div>
         </div>
+
+        <h2>Transforms</h2>
+        <div class="ops">
+          <div class="op"><canvas data-word="move[top](0.8) x[+z](2) C" aria-label="Move"></canvas><div><code><a data-play="move[top](0.8) x[+z](2) C">move(x, y, z)</a></code><p>shift; numbers left out are 0</p></div></div>
+          <div class="op"><canvas data-word="turn[top](45) x[+z](2) C" aria-label="Turn"></canvas><div><code><a data-play="turn[top](45) x[+z](2) C">turn(z, y, x)</a></code><p>degrees about each axis, z first: counterclockwise from above</p></div></div>
+          <div class="op"><canvas data-word="stretch[top](0.4, 0.4) x[+z](2) C" aria-label="Stretch"></canvas><div><code><a data-play="stretch[top](0.4, 0.4) x[+z](2) C">stretch(x, y, z)</a></code><p>along each axis; numbers left out are 1</p></div></div>
+        </div>
+        <p class="small muted">Without a selector, the whole shape; with one, the picked faces' corners. <code>turn</code> and <code>stretch</code> act about each region's centre.</p>
       </div>
 
       <div class="col">

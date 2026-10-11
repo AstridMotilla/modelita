@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Modelita Tour</title>
-<meta name="description" content="The Modelita language in thirteen figures.">
+<meta name="description" content="The Modelita language in fourteen figures.">
 <meta name="theme-color" content="#fdfdfb">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Modelita Tour">
-<meta property="og:description" content="A little language for shapes, in thirteen figures.">
+<meta property="og:description" content="A little language for shapes, in fourteen figures.">
 <meta property="og:url" content="https://modelita.vercel.app/tour/">
 <meta property="og:image" content="https://modelita.vercel.app/og-afff4001.png">
 <meta property="og:image:width" content="1200">
@@ -35,7 +35,7 @@
   <main>
     <div class="title">
       <h1>The tour</h1>
-      <p class="motto">the language in thirteen figures</p>
+      <p class="motto">the language in fourteen figures</p>
     </div>
 
     <ol class="tour">
@@ -114,6 +114,13 @@
         <div>
           <code class="block"><a data-play="half = x[+x&amp;side](1.5) x[+z](2) C&#10;mirror[+x&amp;top] half&#10;k[top](0.5) mirror[+x&amp;top] half">half = x[+x&amp;side](1.5) x[+z](2) C<br>mirror[+x&amp;top] half</a></code>
           <p>Build half an arch, then <code>mirror</code> joins it to its reflection across the faces you pick: here the end of the lintel. The copies keep their roles, so later steps act on both halves.</p>
+        </div>
+      </li>
+      <li>
+        <canvas data-word="twist = turn[top](15) x[top](0.5)&#10;twist^8 x[+z](0.5) C(1.4, 1.4, 0.4)" data-pitch="0.35" aria-label="A twisted column"></canvas>
+        <div>
+          <code class="block"><a data-play="twist = turn[top](15) x[top](0.5)&#10;twist^8 x[+z](0.5) C(1.4, 1.4, 0.4)">twist = turn[top](15) x[top](0.5)<br>twist^8 x[+z](0.5) C(1.4, 1.4, 0.4)</a></code>
+          <p><code>move</code>, <code>turn</code> and <code>stretch</code> move the whole shape, or with a selector just part of it. Here each storey's lid is turned a little: a twisted column.</p>
         </div>
       </li>
       <li>

@@ -41,6 +41,15 @@ half = x[+x&side](1.5) x[+z](2) C     ; a post and half a lintel
 mirror[+x&top] half                   ; the seam is the lintel's end
 k[top](0.5) mirror[+x&top] half       ; the copies keep their roles
 mirror[-z] Y6                         ; a pyramid and its reflection: a diamond`,
+  "Transforms": `; Transforms move vertices. Without a selector they move the whole shape;
+; with one, only the picked faces' corners move, and the rest follows.
+turn(30) C(3, 1, 1)                     ; turned about the vertical
+stretch(1, 1, 2) I                      ; stretched upwards
+turn[top](45) x[+z](3) C                ; a tower with its top twisted
+stretch[top](0.3, 0.3) x[+z](2) C       ; tapered
+move[top](1.5) x[+z](3) C               ; leaning
+twist = turn[top](15) x[top](0.5)
+twist^8 x[+z](0.5) C(1.4, 1.4, 0.4)     ; a twisted column, a storey at a time`,
   "City": `; A small city, in one body. Lay out one block of four lots, mirror it
 ; into a grid of sixteen, then build: every lot of a kind is built by the
 ; same steps, because mirror's copies keep their labels.

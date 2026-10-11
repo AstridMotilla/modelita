@@ -36,7 +36,10 @@
         (list "push" #f push '(0.5))
         (list "merge" #f merge '())
         (list "flip" #f flip '())
-        (list "mirror" #f mirror '())))
+        (list "mirror" #f mirror '())
+        (list "move" #f move-by '(0.0 0.0 0.0))
+        (list "turn" #f turn '(0.0 0.0 0.0))
+        (list "stretch" #f stretch '(1.0 1.0 1.0))))
 
 (define operator-table
   (for*/hash ([o operators] [key (list (first o) (second o))] #:when key) (values key o)))

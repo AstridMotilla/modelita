@@ -26,8 +26,8 @@ This spec aims for:
 3. **Stable references.** Roles and labels let a selector name the same
    faces when an earlier step changes.
 4. **Continuity.** Small changes to numbers give small changes to the shape.
-5. **A small core.** Six of Conway's operators, nine modelling operators
-   and `mirror`. Everything else is defined from them.
+5. **A small core.** Six of Conway's operators, nine modelling operators,
+   `mirror` and three transforms. Everything else is defined from them.
 
 ---
 
@@ -456,6 +456,43 @@ Parts of the shape on the far side of the plane overlap their copies. That
 is allowed (§1). A later step can act on both halves at once, because the
 copies keep their roles and labels.
 
+### 5.5 Transforms
+
+| Name | Letter | Numbers (defaults) | Makes |
+|---|---|---|---|
+| `move` | — | x, y, z (0, 0, 0) | — |
+| `turn` | — | z, y, x in degrees (0, 0, 0) | — |
+| `stretch` | — | x, y, z (1, 1, 1) | — |
+
+They move vertices and make no faces. Without a selector they move the
+whole shape; with one, only the corners of the picked faces move, and the
+faces around them follow, as with `push` and `scale`.
+
+```
+turn(45) C(3, 1, 1)                     ; a bar, turned about the vertical
+turn[top](30) x[+z](3) C                ; a tower with its top twisted
+stretch[top](0.4, 0.4) x[+z](2) C       ; tapered
+```
+
+**move** — Each vertex of a picked face moves by `(x, y, z)`.
+
+**turn** and **stretch** act on each *region* (as in `scale`: a maximal
+set of picked faces connected through shared vertices) about its centre
+`c`, the average of the region's distinct vertices' points. Each of those
+vertices, at `p`, with `d = p − c`:
+
+- **stretch** moves to `c + (x·d.x, y·d.y, z·d.z)`;
+- **turn** moves to `c + Rz(Ry(Rx(d)))`: turned by `x` degrees about the x
+  axis, then `y` about the y axis, then `z` about the z axis. A positive
+  angle turns counterclockwise seen from the positive end of its axis. With
+  `a` in radians (degrees · π / 180):
+  - `Rx(a)(d) = (d.x, d.y·cos a − d.z·sin a, d.y·sin a + d.z·cos a)`
+  - `Ry(a)(d) = (d.x·cos a + d.z·sin a, d.y, −d.x·sin a + d.z·cos a)`
+  - `Rz(a)(d) = (d.x·cos a − d.y·sin a, d.x·sin a + d.y·cos a, d.z)`
+
+The whole shape is one region, so `turn` and `stretch` without a selector
+act about its centre.
+
 ## 6. Definitions
 
 ```
@@ -566,11 +603,10 @@ tolerance of 1e-9; everything else must match exactly.
 ## 11. Not in v1
 
 - several bodies, unions and other booleans;
-- moving, rotating or scaling the whole shape (apart from `r`);
 - subdivision and curves;
 - symmetry beyond `mirror`: rotations, and arrays beyond `^n`;
 - selectors as parameters.
 
-The likely order for adding them: whole-shape transforms, one subdivision
-operator, several bodies. Rotations and arrays of copies come most
-naturally with several bodies, so they wait for them.
+The likely order for adding them: one subdivision operator, several
+bodies. Rotations and arrays of copies come most naturally with several
+bodies, so they wait for them.

@@ -14,7 +14,7 @@
 ;; follow.
 (require racket/list racket/set racket/math data/gvector
          "geom.rkt" "shape.rkt" "errors.rkt")
-(provide extrude lift inset kis bridge scale-region push merge flip
+(provide extrude lift inset kis bridge scale-region push merge flip mirror
          dual ambo truncate gyro reflect
          needle zip join expand ortho meta bevel snub
          current-skips made-by-last-step)
@@ -444,6 +444,47 @@
   (shape (for/vector ([p (shape-vertices s)]) (cons (- (first p)) (rest p)))
          (for/list ([f (shape-faces s)]) (struct-copy face f [corners (reverse (face-corners f))]))
          (add1 (shape-step s))))
+
+;; --- symmetry -------------------------------------------------------------------------------
+
+(define (mirror s picked)
+  ;; The shape joined to its reflection across the picked faces, the seam,
+  ;; which are removed: build half of something, get the whole. The seam's
+  ;; corners are shared by both halves; every other vertex gets a reflected
+  ;; copy, and every unpicked face a reflected copy with its corners reversed.
+  (define faces (list->vector (shape-faces s)))
+  (define count (for/sum ([p picked]) (if p 1 0)))
+  (when (or (zero? count) (= count (vector-length faces)))
+    (fail 'precondition "mirror needs a seam: some of the faces, but not all of them"))
+  (define owner (owners faces))
+  (define around (faces-around s))
+  (define seam (make-vector (vector-length (shape-vertices s)) #f))
+  (for* ([(f i) (in-indexed faces)] #:when (vector-ref picked i) [v (face-corners f)]) (vector-set! seam v #t))
+  (define (seam? v) (vector-ref seam v))
+  (for ([v (in-range (vector-length seam))] #:when (seam? v))
+    (define ring (ring-around v around faces owner))
+    (when (and (for/or ([i ring]) (not (vector-ref picked i)))
+               (> (length (picked-fans ring picked)) 1))
+      (fail 'precondition "mirror: the seam meets itself at corner ~a, so the halves would be joined there twice" v)))
+  (for* ([(f i) (in-indexed faces)] #:unless (vector-ref picked i) [e (pairs (face-corners f))])
+    (when (and (seam? (car e)) (seam? (cdr e))
+               (not (vector-ref picked (hash-ref owner (cons (cdr e) (car e))))))
+      (fail 'precondition "mirror: edge ~a-~a joins two corners of the seam outside it, so both halves would have it"
+            (car e) (cdr e))))
+  ;; The mirror's plane: through the average of the seam's corners, across the sum of its normals.
+  (define c (centroid (for/list ([v (in-range (vector-length seam))] #:when (seam? v)) (point s v))))
+  (define n (unit (for/fold ([m '(0.0 0.0 0.0)]) ([(f i) (in-indexed faces)] #:when (vector-ref picked i))
+                    (add m (face-normal s f)))))
+  (define (reflected p) (add p (scale n (* -2 (dot (map - p c) n)))))
+  (define step (add1 (shape-step s)))
+  (define-values (points vertex!) (points-of s))
+  (define copy (for/vector ([p (shape-vertices s)] [v (in-naturals)]) (if (seam? v) v (vertex! (reflected p)))))
+  (define kept (for/list ([f faces] [p picked] #:unless p) f))
+  (finish s points
+          (append kept
+                  (for/list ([f kept])
+                    (define corners (map (λ (v) (vector-ref copy v)) (face-corners f)))
+                    (struct-copy face f [corners (cons (first corners) (reverse (rest corners)))] [step step])))))
 
 ;; Conway's other letters are his identities. The rightmost step acts on the
 ;; picked faces; each step to its left acts on the faces the one before made.

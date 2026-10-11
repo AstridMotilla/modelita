@@ -35,6 +35,12 @@ ring = h[inner] i[+x|-x](0.3) x[+x](1) x[-x](1) C
 ring
 k[top](0.6) x[+z](0.5) ring
 h[inner] i[+z|-z](0.35) P6`,
+  "Mirror": `; Build half of a shape: mirror joins it to its reflection
+; across the faces you pick, the seam.
+half = x[+x&side](1.5) x[+z](2) C     ; a post and half a lintel
+mirror[+x&top] half                   ; the seam is the lintel's end
+k[top](0.5) mirror[+x&top] half       ; the copies keep their roles
+mirror[-z] Y6                         ; a pyramid and its reflection: a diamond`,
 };
 export const FIRST_LINE = { "Tower": 6 };
 

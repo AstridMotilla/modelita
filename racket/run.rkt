@@ -35,7 +35,8 @@
         (list "scale" #f scale-region '(0.5))
         (list "push" #f push '(0.5))
         (list "merge" #f merge '())
-        (list "flip" #f flip '())))
+        (list "flip" #f flip '())
+        (list "mirror" #f mirror '())))
 
 (define operator-table
   (for*/hash ([o operators] [key (list (first o) (second o))] #:when key) (values key o)))

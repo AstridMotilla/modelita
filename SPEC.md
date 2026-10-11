@@ -26,8 +26,8 @@ This spec aims for:
 3. **Stable references.** Roles and labels let a selector name the same
    faces when an earlier step changes.
 4. **Continuity.** Small changes to numbers give small changes to the shape.
-5. **A small core.** Six of Conway's operators and nine modelling operators.
-   Everything else is defined from them.
+5. **A small core.** Six of Conway's operators, nine modelling operators
+   and `mirror`. Everything else is defined from them.
 
 ---
 
@@ -414,6 +414,48 @@ rightmost uses the token's selector, and each one after it acts on `new`
 Conway's identities. A derived letter takes no numbers and runs several
 steps.
 
+### 5.4 Symmetry
+
+| Name | Letter | Number | Makes |
+|---|---|---|---|
+| `mirror` | — | — | copies, keeping their roles |
+
+**mirror** — Joins the shape to its own reflection across the picked
+faces, the **seam**, which are removed: build half of something, and
+`mirror` makes the whole.
+
+```
+half = x[+x&side](1.5) x[+z](2) C     ; a post and half a lintel
+mirror[+x&top] half                   ; the whole arch: the seam is the lintel's end
+```
+
+The **seam corners** are the vertices used by a picked face. It is a
+`precondition` error if:
+
+- no face is picked, or every face is;
+- a seam corner has unpicked faces around it and its picked faces form
+  more than one fan (§1): the halves would be joined there twice;
+- an edge joins two seam corners and neither of its faces is picked: both
+  halves would have it.
+
+The mirror's plane passes through `c`, the average of the seam corners'
+points in vertex order, and is perpendicular to `n`, the unit of the sum of
+the picked faces' normals in face order. A point reflects to
+`p − 2((p − c)·n)·n`. If that sum is zero, every point reflects to itself.
+
+- **Vertices.** Each vertex `v` that is not a seam corner, in order, gets a
+  new vertex at its reflection, `m(v)`. A seam corner is its own: `m(v) = v`.
+- **Faces.** The unpicked faces, in order, then for each unpicked face
+  `v₀ … vₙ₋₁` in order its copy `m(v₀), m(vₙ₋₁), …, m(v₁)`: the same
+  corners reflected and reversed, so it still faces outwards. A copy has
+  its face's role and labels, and is made by this step. The seam faces are
+  removed, and seam corners inside the seam are then used by no face and
+  removed with them.
+
+Parts of the shape on the far side of the plane overlap their copies. That
+is allowed (§1). A later step can act on both halves at once, because the
+copies keep their roles and labels.
+
 ## 6. Definitions
 
 ```
@@ -526,8 +568,9 @@ tolerance of 1e-9; everything else must match exactly.
 - several bodies, unions and other booleans;
 - moving, rotating or scaling the whole shape (apart from `r`);
 - subdivision and curves;
-- symmetry operators and arrays beyond `^n`;
+- symmetry beyond `mirror`: rotations, and arrays beyond `^n`;
 - selectors as parameters.
 
-The likely order for adding them: symmetry, whole-shape transforms, one
-subdivision operator, several bodies.
+The likely order for adding them: whole-shape transforms, one subdivision
+operator, several bodies. Rotations and arrays of copies come most
+naturally with several bodies, so they wait for them.

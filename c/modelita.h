@@ -1052,6 +1052,65 @@ static mdl__shape *mdl__reflect(mdl__ctx *x, const mdl__shape *s, const char *pi
     return r;
 }
 
+/* --- symmetry ------------------------------------------------------------------------------------------- */
+
+static mdl__shape *mdl__mirror(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num) {
+    /* The shape joined to its reflection across the picked faces, the seam, which are
+       removed: build half of something, get the whole. The seam's corners are shared by
+       both halves; every other vertex gets a reflected copy, and every unpicked face a
+       reflected copy with its corners reversed. */
+    (void)num;
+    int count = 0;
+    for (int i = 0; i < s->nf; i++) count += picked[i] ? 1 : 0;
+    if (count == 0 || count == s->nf)
+        mdl__fail(x, MDL_ERR_PRECONDITION, "mirror needs a seam: some of the faces, but not all of them");
+    mdl__map owner;
+    mdl__owners(x, s, &owner);
+    mdl__around ar = mdl__faces_around(x, s);
+    char *seam = (char *)mdl__zalloc(x->a, (size_t)s->nv + 1);
+    for (int i = 0; i < s->nf; i++) if (picked[i]) for (int k = 0; k < s->f[i].n; k++) seam[s->f[i].c[k]] = 1;
+    for (int v = 0; v < s->nv; v++) {
+        if (!seam[v]) continue;
+        mdl__ints ring = mdl__ring(x, s, &ar, &owner, v);
+        int unpicked = 0;
+        for (int k = 0; k < ring.n; k++) if (!picked[ring.items[k]]) unpicked = 1;
+        if (unpicked && mdl__picked_fans(x, ring, picked).n > 1)
+            mdl__fail(x, MDL_ERR_PRECONDITION, "mirror: the seam meets itself at corner %d, so the halves would be joined there twice", v);
+    }
+    for (int i = 0; i < s->nf; i++) {
+        if (picked[i]) continue;
+        for (int k = 0; k < s->f[i].n; k++) {
+            int a = s->f[i].c[k], bb = s->f[i].c[(k + 1) % s->f[i].n];
+            if (seam[a] && seam[bb] && !picked[mdl__twin(&owner, a, bb)])
+                mdl__fail(x, MDL_ERR_PRECONDITION, "mirror: edge %d-%d joins two corners of the seam outside it, so both halves would have it", a, bb);
+        }
+    }
+    /* The mirror's plane: through the average of the seam's corners, across the sum of its normals. */
+    mdl__v3 c = {0, 0, 0}, n = {0, 0, 0};
+    int corners = 0;
+    for (int v = 0; v < s->nv; v++) if (seam[v]) { c = mdl__add(c, s->v[v]); corners++; }
+    c.x /= corners; c.y /= corners; c.z /= corners;
+    for (int i = 0; i < s->nf; i++) if (picked[i]) n = mdl__add(n, mdl__face_normal(x, s, &s->f[i]));
+    n = mdl__unit(n);
+    mdl__build b; mdl__build_from(&b, x, s);
+    int *copy = (int *)mdl__alloc(x->a, sizeof(int) * (size_t)(s->nv + 1));
+    for (int v = 0; v < s->nv; v++) {
+        if (seam[v]) { copy[v] = v; continue; }
+        mdl__v3 p = s->v[v], d = {p.x - c.x, p.y - c.y, p.z - c.z};
+        copy[v] = mdl__vertex(&b, mdl__add(p, mdl__scale(n, -2 * mdl__dot(d, n))));
+    }
+    for (int i = 0; i < s->nf; i++) if (!picked[i]) mdl__keep(&b, &s->f[i]);
+    for (int i = 0; i < s->nf; i++) {
+        if (picked[i]) continue;
+        const mdl__face *f = &s->f[i];
+        int *q = (int *)mdl__alloc(x->a, sizeof(int) * (size_t)f->n);
+        q[0] = copy[f->c[0]];
+        for (int k = 1; k < f->n; k++) q[k] = copy[f->c[f->n - k]];
+        mdl__face_add(&b, q, f->n, f->role, f->labels, s->step + 1);
+    }
+    return mdl__finish(&b, s);
+}
+
 /* Conway's other letters are his identities: the rightmost step acts on the
    picked faces, each step to its left on the faces the one before made. */
 static mdl__shape *mdl__on_made(mdl__ctx *x, const mdl__shape *s, const char *picked, const mdl__opfn *steps, int n) {
@@ -1091,6 +1150,7 @@ static const mdl__operator mdl__operators[] = {
     {"bridge", "h", mdl__bridge, 0, 0}, {"lift", NULL, mdl__lift, 1, 1.0},
     {"scale", NULL, mdl__scale_region, 1, 0.5}, {"push", NULL, mdl__push, 1, 0.5},
     {"merge", NULL, mdl__merge, 0, 0}, {"flip", NULL, mdl__flip, 0, 0},
+    {"mirror", NULL, mdl__mirror, 0, 0},
 };
 #define MDL__NOPS ((int)(sizeof mdl__operators / sizeof *mdl__operators))
 

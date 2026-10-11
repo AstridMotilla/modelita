@@ -60,7 +60,7 @@ At `/play/`:
 | `site/lang.js` | what the pages know about Modelita text: line kinds, tokens, steps, links |
 | `site/modelita.js`, `modelita.wasm` | the engine: `modelita_web.c` + `../c/modelita.h` built with Emscripten |
 | `site/og-*.png`, `favicon.svg` | the link preview and the tab icon. The preview's name carries a fingerprint of its contents, so Discord, Slack and X fetch it again when it changes |
-| `og.svg` | the link preview's source: `make og` exports it to `site/og-<fingerprint>.png` and points the page at it (needs Inkscape and the Archivo and DM Mono fonts) |
+| `og.mjs`, `og.svg` | the link preview: `og.mjs` draws the tower from the engine into `og.svg`, and `make og` exports that to `site/og-<fingerprint>.png` and points every page at it (needs Inkscape and the Archivo and DM Mono fonts) |
 | `modelita_web.c` | runs a program and returns the results as JSON |
 | `dump.mjs` | the conformance dump from the engine: `python3 tests/run.py -- node web/dump.mjs` |
 | `check-page.mjs` | `lang.js` against the engine: every example, every step, link round trips; and every figure and playground link on every page |

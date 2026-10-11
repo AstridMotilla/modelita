@@ -24,9 +24,11 @@ check:
 	node check-page.mjs
 
 # The page loads its engine as a module, which browsers refuse from file://.
+# serve.py also tells the browser to check every file again, so a rebuilt
+# engine is never hidden behind a cached one.
 serve:
 	@echo "open http://localhost:8642"
-	cd site && python3 -m http.server 8642 --bind 127.0.0.1
+	python3 serve.py
 
 .PHONY: all container check serve
 

@@ -1,0 +1,8 @@
+; turn: each region turned about its centre (SPEC.md §5.5)
+turn(90) C(2, 1, 1)                           ; about the vertical: counterclockwise from above
+turn(0, 90) C(2, 1, 1)                        ; about y
+turn(0, 0, 90) C(2, 1, 1)                     ; about x
+turn(30, 20, 10) move(1, 0, 0) C(2, 1, 1)     ; x first, then y, then z; about the shape's own centre
+turn[top](45) x[+z](2) C                      ; a twisted lid
+turn[top](45) x[top](1) i[+z|-z](0.2) C       ; two regions, each about its own centre
+turn(1, 2, 3, 4) C                            ; at most three numbers

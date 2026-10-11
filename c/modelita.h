@@ -687,7 +687,11 @@ static mdl__shape *mdl__lift(mdl__ctx *x, const mdl__shape *s, const char *picke
     return mdl__finish(&b, s);
 }
 
-static mdl__shape *mdl__scale_region(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num) {
+/* Every region of picked faces (maximal sets connected through shared corners) has its
+   corners moved by to(c, p, params): c is the average of the region's corners. */
+typedef mdl__v3 (*mdl__region_fn)(mdl__v3 c, mdl__v3 p, const double *params);
+
+static mdl__shape *mdl__each_region(mdl__ctx *x, const mdl__shape *s, const char *picked, mdl__region_fn to, const double *params) {
     mdl__around ar = mdl__faces_around(x, s);
     mdl__v3 *pts = (mdl__v3 *)mdl__alloc(x->a, sizeof(mdl__v3) * (size_t)(s->nv + 1));
     memcpy(pts, s->v, sizeof(mdl__v3) * (size_t)s->nv);
@@ -715,8 +719,55 @@ static mdl__shape *mdl__scale_region(mdl__ctx *x, const mdl__shape *s, const cha
         int count = 0;
         for (int v = 0; v < s->nv; v++) if (in[v]) { c = mdl__add(c, s->v[v]); count++; }
         c.x /= count; c.y /= count; c.z /= count;
-        for (int v = 0; v < s->nv; v++) if (in[v]) pts[v] = mdl__lerp(c, s->v[v], num[0]);
+        for (int v = 0; v < s->nv; v++) if (in[v]) pts[v] = to(c, s->v[v], params);
     }
+    return mdl__moved(x, s, pts);
+}
+
+static mdl__v3 mdl__scale_to(mdl__v3 c, mdl__v3 p, const double *num) { return mdl__lerp(c, p, num[0]); }
+
+static mdl__shape *mdl__scale_region(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num) {
+    /* Each region scaled about its centre. */
+    return mdl__each_region(x, s, picked, mdl__scale_to, num);
+}
+
+static mdl__v3 mdl__turn_to(mdl__v3 c, mdl__v3 p, const double *t) {
+    /* t: cos and sin about x, then y, then z */
+    double x0 = p.x - c.x, y0 = p.y - c.y, z0 = p.z - c.z;
+    double x1 = x0, y1 = y0 * t[0] - z0 * t[1], z1 = y0 * t[1] + z0 * t[0];
+    double x2 = x1 * t[2] + z1 * t[3], y2 = y1, z2 = -(x1 * t[3]) + z1 * t[2];
+    mdl__v3 d = {x2 * t[4] - y2 * t[5], x2 * t[5] + y2 * t[4], z2};
+    return mdl__add(c, d);
+}
+
+static mdl__shape *mdl__turn(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num) {
+    /* Each region turned about its centre: by num[2] degrees about the x axis, then
+       num[1] about the y axis, then num[0] about the vertical. */
+    double t[6];
+    for (int k = 0; k < 3; k++) {
+        double a = num[2 - k] * M_PI / 180;
+        t[2 * k] = cos(a); t[2 * k + 1] = sin(a);
+    }
+    return mdl__each_region(x, s, picked, mdl__turn_to, t);
+}
+
+static mdl__v3 mdl__stretch_to(mdl__v3 c, mdl__v3 p, const double *num) {
+    mdl__v3 d = {(p.x - c.x) * num[0], (p.y - c.y) * num[1], (p.z - c.z) * num[2]};
+    return mdl__add(c, d);
+}
+
+static mdl__shape *mdl__stretch(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num) {
+    /* Each region stretched about its centre, along each axis. */
+    return mdl__each_region(x, s, picked, mdl__stretch_to, num);
+}
+
+static mdl__shape *mdl__move_by(mdl__ctx *x, const mdl__shape *s, const char *picked, const double *num) {
+    /* The picked faces' corners moved by (num[0], num[1], num[2]). */
+    char *touched = (char *)mdl__zalloc(x->a, (size_t)s->nv + 1);
+    for (int i = 0; i < s->nf; i++) if (picked[i]) for (int k = 0; k < s->f[i].n; k++) touched[s->f[i].c[k]] = 1;
+    mdl__v3 by = {num[0], num[1], num[2]};
+    mdl__v3 *pts = (mdl__v3 *)mdl__alloc(x->a, sizeof(mdl__v3) * (size_t)(s->nv + 1));
+    for (int v = 0; v < s->nv; v++) pts[v] = touched[v] ? mdl__add(s->v[v], by) : s->v[v];
     return mdl__moved(x, s, pts);
 }
 
@@ -1136,21 +1187,23 @@ MDL__DERIVED(mdl__meta, mdl__kis, mdl__dual, mdl__ambo)
 MDL__DERIVED(mdl__bevel, mdl__truncate, mdl__ambo)
 MDL__DERIVED(mdl__snub, mdl__dual, mdl__gyro)
 
-typedef struct { const char *name, *letter; mdl__opfn fn; int nnum; double num; } mdl__operator;
+typedef struct { const char *name, *letter; mdl__opfn fn; int nnum; double num[3]; } mdl__operator;   /* num: the defaults */
 
 static const mdl__operator mdl__operators[] = {
-    {"dual", "d", mdl__dual, 0, 0}, {"ambo", "a", mdl__ambo, 0, 0},
-    {"truncate", "t", mdl__truncate, 1, 0.3}, {"kis", "k", mdl__kis, 1, 0.0},
-    {"gyro", "g", mdl__gyro, 0, 0}, {"reflect", "r", mdl__reflect, 0, 0},
-    {"needle", "n", mdl__needle, 0, 0}, {"zip", "z", mdl__zip, 0, 0},
-    {"join", "j", mdl__join, 0, 0}, {"expand", "e", mdl__expand, 0, 0},
-    {"ortho", "o", mdl__ortho, 0, 0}, {"meta", "m", mdl__meta, 0, 0},
-    {"bevel", "b", mdl__bevel, 0, 0}, {"snub", "s", mdl__snub, 0, 0},
-    {"extrude", "x", mdl__extrude, 1, 1.0}, {"inset", "i", mdl__inset, 1, 0.3},
-    {"bridge", "h", mdl__bridge, 0, 0}, {"lift", NULL, mdl__lift, 1, 1.0},
-    {"scale", NULL, mdl__scale_region, 1, 0.5}, {"push", NULL, mdl__push, 1, 0.5},
-    {"merge", NULL, mdl__merge, 0, 0}, {"flip", NULL, mdl__flip, 0, 0},
-    {"mirror", NULL, mdl__mirror, 0, 0},
+    {"dual", "d", mdl__dual, 0, {0}}, {"ambo", "a", mdl__ambo, 0, {0}},
+    {"truncate", "t", mdl__truncate, 1, {0.3}}, {"kis", "k", mdl__kis, 1, {0.0}},
+    {"gyro", "g", mdl__gyro, 0, {0}}, {"reflect", "r", mdl__reflect, 0, {0}},
+    {"needle", "n", mdl__needle, 0, {0}}, {"zip", "z", mdl__zip, 0, {0}},
+    {"join", "j", mdl__join, 0, {0}}, {"expand", "e", mdl__expand, 0, {0}},
+    {"ortho", "o", mdl__ortho, 0, {0}}, {"meta", "m", mdl__meta, 0, {0}},
+    {"bevel", "b", mdl__bevel, 0, {0}}, {"snub", "s", mdl__snub, 0, {0}},
+    {"extrude", "x", mdl__extrude, 1, {1.0}}, {"inset", "i", mdl__inset, 1, {0.3}},
+    {"bridge", "h", mdl__bridge, 0, {0}}, {"lift", NULL, mdl__lift, 1, {1.0}},
+    {"scale", NULL, mdl__scale_region, 1, {0.5}}, {"push", NULL, mdl__push, 1, {0.5}},
+    {"merge", NULL, mdl__merge, 0, {0}}, {"flip", NULL, mdl__flip, 0, {0}},
+    {"mirror", NULL, mdl__mirror, 0, {0}},
+    {"move", NULL, mdl__move_by, 3, {0, 0, 0}}, {"turn", NULL, mdl__turn, 3, {0, 0, 0}},
+    {"stretch", NULL, mdl__stretch, 3, {1, 1, 1}},
 };
 #define MDL__NOPS ((int)(sizeof mdl__operators / sizeof *mdl__operators))
 
@@ -1725,7 +1778,7 @@ static int mdl__parse_line(mdl__ctx *x, const char *line, mdl__stmt *st) {
 enum { OP_PRIM, OP_SEQ, OP_LABEL, OP_REPEAT };
 typedef struct mdl__op {
     int kind;
-    const mdl__operator *prim; const mdl__sel *sel; double num[1];
+    const mdl__operator *prim; const mdl__sel *sel; double num[3];
     struct mdl__op **ops; int nops;     /* OP_SEQ: applied in order */
     struct mdl__op *inner; const char *label; int count;
 } mdl__op;
@@ -1805,7 +1858,7 @@ static mdl__value mdl__token_value(mdl__ctx *x, const mdl__env *env, const mdl__
         double *num = mdl__numbers(x, t, o->nnum, b);
         mdl__op *op = mdl__op_new(x, OP_PRIM);
         op->prim = o; op->sel = t->sel;
-        op->num[0] = t->nargs > 0 ? num[0] : o->num;
+        for (int k = 0; k < o->nnum; k++) op->num[k] = k < t->nargs ? num[k] : o->num[k];
         v.op = op;
     } else if (mdl__is_seed(t->head)) {
         if (t->sel) mdl__fail(x, MDL_ERR_SYNTAX, "only primitive operators take [selectors]; %s is a seed", t->head);

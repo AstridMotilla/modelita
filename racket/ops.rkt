@@ -15,6 +15,7 @@
 (require racket/list racket/set racket/math data/gvector
          "geom.rkt" "shape.rkt" "errors.rkt")
 (provide extrude lift inset kis bridge scale-region push merge flip mirror
+         move-by turn stretch
          dual ambo truncate gyro reflect
          needle zip join expand ortho meta bevel snub
          current-skips made-by-last-step)
@@ -192,31 +193,63 @@
         (list (face (map copy-of (face-corners f)) 'top (face-labels f) step))))))
   (finish s points (append (for/list ([f faces] [p picked] #:unless p) f) made)))
 
-(define (scale-region s picked [factor 0.5])
-  ;; Each connected piece of picked faces (connected through shared corners)
-  ;; scaled about the average of its corners. No new faces.
+;; --- moving the corners of regions ---------------------------------------------------------
+
+(define (regions s picked)
+  ;; The regions of picked faces: maximal sets connected through shared
+  ;; corners. Each is the list of its corners in order.
   (define faces (list->vector (shape-faces s)))
   (define around (faces-around s))
   (define seen (make-vector (vector-length faces) #f))
-  (define moves
-    (for/fold ([moves (hasheqv)]) ([i (vector-length faces)] #:when (and (vector-ref picked i) (not (vector-ref seen i))))
-      (define vs                                          ; the piece's corners, in order
-        (let grow ([todo (list i)] [vs (seteqv)])
-          (cond
-            [(null? todo) (sort (set->list vs) <)]
-            [(vector-ref seen (car todo)) (grow (cdr todo) vs)]
-            [else
-             (define j (car todo))
-             (vector-set! seen j #t)
-             (define corners (face-corners (vector-ref faces j)))
-             (grow (append (cdr todo)
-                           (for*/list ([v corners] [k (vector-ref around v)]
-                                       #:when (and (vector-ref picked k) (not (vector-ref seen k))))
-                             k))
-                   (set-union vs (list->seteqv corners)))])))
-      (define c (centroid (map (λ (v) (point s v)) vs)))
-      (for/fold ([moves moves]) ([v vs]) (hash-set moves v (lerp c (point s v) factor)))))
-  (move s moves))
+  (for/list ([i (vector-length faces)] #:when (and (vector-ref picked i) (not (vector-ref seen i))))
+    (let grow ([todo (list i)] [vs (seteqv)])
+      (cond
+        [(null? todo) (sort (set->list vs) <)]
+        [(vector-ref seen (car todo)) (grow (cdr todo) vs)]
+        [else
+         (define j (car todo))
+         (vector-set! seen j #t)
+         (define corners (face-corners (vector-ref faces j)))
+         (grow (append (cdr todo)
+                       (for*/list ([v corners] [k (vector-ref around v)]
+                                   #:when (and (vector-ref picked k) (not (vector-ref seen k))))
+                         k))
+               (set-union vs (list->seteqv corners)))]))))
+
+(define (each-region s picked to)
+  ;; Every region's corners moved by (to c p): c is the average of the
+  ;; region's corners, p the corner's point. No new faces.
+  (move s (for*/fold ([moves (hasheqv)]) ([vs (regions s picked)]
+                                          [c (in-value (centroid (map (λ (v) (point s v)) vs)))]
+                                          [v vs])
+            (hash-set moves v (to c (point s v))))))
+
+(define (scale-region s picked [factor 0.5])
+  ;; Each region scaled about its centre.
+  (each-region s picked (λ (c p) (lerp c p factor))))
+
+(define (turn s picked [z 0.0] [y 0.0] [x 0.0])
+  ;; Each region turned about its centre: by x degrees about the x axis,
+  ;; then y about the y axis, then z about the vertical.
+  (define (cs a) (let ([t (/ (* a pi) 180)]) (values (cos t) (sin t))))
+  (define-values (cx sx) (cs x))
+  (define-values (cy sy) (cs y))
+  (define-values (cz sz) (cs z))
+  (each-region s picked
+               (λ (c p)
+                 (define-values (x0 y0 z0) (apply values (map - p c)))
+                 (define-values (x1 y1 z1) (values x0 (- (* y0 cx) (* z0 sx)) (+ (* y0 sx) (* z0 cx))))
+                 (define-values (x2 y2 z2) (values (+ (* x1 cy) (* z1 sy)) y1 (+ (- (* x1 sy)) (* z1 cy))))
+                 (add c (list (- (* x2 cz) (* y2 sz)) (+ (* x2 sz) (* y2 cz)) z2)))))
+
+(define (stretch s picked [x 1.0] [y 1.0] [z 1.0])
+  ;; Each region stretched about its centre, by x, y and z along each axis.
+  (each-region s picked (λ (c p) (add c (map * (map - p c) (list x y z))))))
+
+(define (move-by s picked [x 0.0] [y 0.0] [z 0.0])
+  ;; The picked faces' corners moved by (x, y, z).
+  (define vs (for*/seteqv ([(f p) (in-parallel (shape-faces s) picked)] #:when p [v (face-corners f)]) v))
+  (move s (for/hasheqv ([v vs]) (values v (add (point s v) (list x y z))))))
 
 (define (push s picked [distance 0.5])
   ;; The picked faces' corners moved along the average normal of the picked

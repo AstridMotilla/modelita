@@ -1,0 +1,4 @@
+; move: the picked faces' corners shifted (SPEC.md §5.5)
+move(1, 2, 3) C                               ; the whole shape
+move(0.5) C                                   ; numbers left out are 0
+move[top](1) x[+z](2) C                       ; only the lid: the walls lean

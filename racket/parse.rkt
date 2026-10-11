@@ -3,6 +3,7 @@
 ;;
 ;;   house = k[top](0.9) x[+z](0.6) C      a definition
 ;;   storey(h, r) = x[inner](h) i[top](r)  a definition with parameters
+;;   storey[part](h) = x[part](h)          ... and a selector parameter
 ;;   k[top] house                          a word to show
 ;;   house + move(3) tree                  shapes side by side
 ;;   use "other.mdl"   gallery "g.svg"   export "f.obj" word
@@ -13,14 +14,15 @@
 (provide (struct-out statement) (struct-out token) parse-line parse-word read-label)
 
 ;; kind: 'define 'show 'use 'gallery 'export. file: for use, gallery and export.
-(struct statement (kind name params word file) #:transparent)
+;; selector: a definition's selector parameter (a symbol), or #f.
+(struct statement (kind name params word file [selector #:auto]) #:transparent #:mutable)
 
 ;; head: a string. selector: data or #f. args: numbers and parameter names
 ;; (symbols), or #f when there are no ( ). label: a symbol or #f.
 (struct token (head selector args label count text) #:transparent)
 
 (define NAME "[A-Za-z][A-Za-z0-9_-]*")
-(define DEFINE (pregexp (string-append "^\\s*(" NAME ")\\s*(?:\\(([^)]*)\\))?\\s*=(.*)$")))
+(define DEFINE (pregexp (string-append "^\\s*(" NAME ")\\s*(?:\\[([^\\]]*)\\])?\\s*(?:\\(([^)]*)\\))?\\s*=(.*)$")))
 (define FILE-ONLY #px"^\\s*(use|gallery)\\s+\"([^\"]*)\"\\s*$")
 (define EXPORT #px"^\\s*export\\s+\"([^\"]*)\"(.*)$")
 (define NUMBER #px"^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$")
@@ -39,15 +41,20 @@
     [(regexp-match DEFINE code)
      => (λ (m)
           (define params
-            (if (third m)
-                (for/list ([p (string-split (third m) "," #:trim? #f)])
+            (if (fourth m)
+                (for/list ([p (string-split (fourth m) "," #:trim? #f)])
                   (define name (string-trim p))
                   (unless (regexp-match? (pregexp (string-append "^" NAME "$")) name)
                     (fail 'syntax "~s is not a parameter name" name))
                   (string->symbol name))
                 '()))
           (when (check-duplicates params) (fail 'syntax "a parameter is named twice"))
-          (statement 'define (second m) params (parse-word (fourth m)) #f))]
+          (define selector (and (third m) (read-selector-parameter (third m))))
+          (when (and selector (memq selector params))
+            (fail 'syntax "~a names both the selector and a number" selector))
+          (define st (statement 'define (second m) params (parse-word (fifth m)) #f))
+          (set-statement-selector! st selector)
+          st)]
     [else (statement 'show #f '() (parse-word code) #f)]))
 
 (define (parse-word text)
@@ -105,6 +112,16 @@
     [(regexp-match? NUMBER t) (exact->inexact (string->number t))]
     [(regexp-match? (pregexp (string-append "^" NAME "$")) t) (string->symbol t)]
     [else (fail 'syntax "~s is not a number" t)]))
+
+(define (read-selector-parameter text)
+  ;; A definition's selector parameter: a name a selector can use, like a label.
+  (define t (string-trim text))
+  (unless (regexp-match? #px"^[a-z][a-z0-9_-]*$" t)
+    (fail 'syntax "a selector parameter is a lowercase name, like [part], not ~s" t))
+  (define name (string->symbol t))
+  (when (or (memq name keywords) (memq name roles) (regexp-match? #px"^n[0-9]+$" t))
+    (fail 'name "~a can't name a selector parameter: it already means something in a selector" t))
+  name)
 
 (define (read-label text)
   (define t (string-trim text))

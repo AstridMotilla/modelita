@@ -1620,6 +1620,7 @@ typedef struct {
     mdl_statement kind;
     const char *name;
     const char **params; int nparams;
+    const char *selector;               /* a definition's selector parameter, or NULL */
     mdl__word_ast word;
     const char *file;
 } mdl__stmt;
@@ -1668,6 +1669,15 @@ static const char *mdl__read_label(mdl__ctx *x, const char *text) {
     if (!mdl__is_lower_name(t)) mdl__fail(x, MDL_ERR_SYNTAX, "a label is a lowercase name, like {roof}, not \"%s\"", t);
     if (!strcmp(t, mdl__keywords[0]) || !strcmp(t, mdl__keywords[1]) || mdl__is_role(t) || (t[0] == 'n' && mdl__is_digits(t + 1)))
         mdl__fail(x, MDL_ERR_NAME, "%s can't be a label: it already means something in a selector", t);
+    return t;
+}
+
+static const char *mdl__read_selector_parameter(mdl__ctx *x, const char *text, size_t n) {
+    /* A definition's selector parameter: a name a selector can use, like a label. */
+    const char *t = mdl__trim(x, text, n);
+    if (!mdl__is_lower_name(t)) mdl__fail(x, MDL_ERR_SYNTAX, "a selector parameter is a lowercase name, like [part], not \"%s\"", t);
+    if (!strcmp(t, mdl__keywords[0]) || !strcmp(t, mdl__keywords[1]) || mdl__is_role(t) || (t[0] == 'n' && mdl__is_digits(t + 1)))
+        mdl__fail(x, MDL_ERR_NAME, "%s can't name a selector parameter: it already means something in a selector", t);
     return t;
 }
 
@@ -1799,14 +1809,19 @@ static int mdl__parse_line(mdl__ctx *x, const char *line, mdl__stmt *st) {
             return 1;
         }
     }
-    /* name, optional (params), then = */
+    /* name, optional [selector], optional (params), then = */
     const char *q = p;
     if ((*q >= 'a' && *q <= 'z') || (*q >= 'A' && *q <= 'Z')) {
         q++;
         while (mdl__is_name_char(*q)) q++;
-        const char *name_end = q, *params = NULL, *params_end = NULL;
+        const char *name_end = q, *params = NULL, *params_end = NULL, *sel = NULL, *sel_end = NULL;
         while (mdl__space(*q)) q++;
-        if (*q == '(') {
+        if (*q == '[') {
+            const char *close = strchr(q, ']');
+            if (close) { sel = q + 1; sel_end = close; q = close + 1; while (mdl__space(*q)) q++; }
+            else q = NULL;
+        }
+        if (q && *q == '(') {
             const char *close = strchr(q, ')');
             if (close) { params = q + 1; params_end = close; q = close + 1; }
             else q = NULL;
@@ -1830,6 +1845,11 @@ static int mdl__parse_line(mdl__ctx *x, const char *line, mdl__stmt *st) {
                 }
                 st->params = ps.items; st->nparams = ps.n;
             }
+            if (sel) {
+                st->selector = mdl__read_selector_parameter(x, sel, (size_t)(sel_end - sel));
+                for (int i = 0; i < st->nparams; i++)
+                    if (!strcmp(st->params[i], st->selector)) mdl__fail(x, MDL_ERR_SYNTAX, "%s names both the selector and a number", st->selector);
+            }
             st->word = mdl__parse_word(x, q + 1);
             return 1;
         }
@@ -1851,9 +1871,22 @@ typedef struct mdl__op {
 
 typedef struct { mdl__shape *shape; mdl__op *op; } mdl__value;
 
-typedef struct { const char *name; const char **params; int nparams; mdl__word_ast word; } mdl__def;
+typedef struct { const char *name; const char **params; int nparams; mdl__word_ast word; const char *selector; } mdl__def;
 typedef MDL__VEC(mdl__def) mdl__env;
-typedef struct { const char **names; double *values; int n; } mdl__bindings;
+/* A definition's parameters while it runs: numbers, and the selector passed for its
+   selector parameter (SPEC.md §6). */
+typedef struct { const char **names; double *values; int n; const char *selector; const mdl__sel *passed; } mdl__bindings;
+
+static const mdl__sel *mdl__bind_selector(mdl__ctx *x, const mdl__sel *s, const mdl__bindings *b) {
+    /* s with the selector parameter replaced by the selector passed for it. */
+    if (!s || !b || !b->selector) return s;
+    if (s->kind == S_TAG) return strcmp(s->tag, b->selector) ? s : b->passed;
+    if (s->kind != S_AND && s->kind != S_OR && s->kind != S_NOT && s->kind != S_NEAR) return s;
+    mdl__sel *r = mdl__sel_new(x, s->kind);
+    r->a = (mdl__sel *)mdl__bind_selector(x, s->a, b);
+    r->b = (mdl__sel *)mdl__bind_selector(x, s->b, b);
+    return r;
+}
 
 static mdl__shape *mdl__apply(mdl__ctx *x, const mdl__op *op, mdl__shape *s) {
     switch (op->kind) {
@@ -1909,6 +1942,8 @@ static double *mdl__numbers(mdl__ctx *x, const mdl__token *t, int most, const md
         if (!t->args[i].is_param) { out[i] = t->args[i].num; continue; }
         int found = 0;
         for (int k = 0; b && k < b->n; k++) if (!strcmp(b->names[k], t->args[i].param)) { out[i] = b->values[k]; found = 1; }
+        if (!found && b && b->selector && !strcmp(b->selector, t->args[i].param))
+            mdl__fail(x, MDL_ERR_NAME, "%s is a selector, not a number", t->args[i].param);
         if (!found) mdl__fail(x, MDL_ERR_NAME, "%s isn't a parameter here", t->args[i].param);
     }
     return out;
@@ -1923,19 +1958,21 @@ static mdl__value mdl__token_value(mdl__ctx *x, const mdl__env *env, const mdl__
     if (o) {
         double *num = mdl__numbers(x, t, o->nnum, b);
         mdl__op *op = mdl__op_new(x, OP_PRIM);
-        op->prim = o; op->sel = t->sel;
+        op->prim = o; op->sel = mdl__bind_selector(x, t->sel, b);
         for (int k = 0; k < o->nnum; k++) op->num[k] = k < t->nargs ? num[k] : o->num[k];
         v.op = op;
     } else if (mdl__is_seed(t->head)) {
-        if (t->sel) mdl__fail(x, MDL_ERR_SYNTAX, "only primitive operators take [selectors]; %s is a seed", t->head);
+        if (t->sel) mdl__fail(x, MDL_ERR_SYNTAX, "only operators and names with a selector parameter take [selectors]; %s is a seed", t->head);
         double *num = mdl__numbers(x, t, mdl__seed_numbers(t->head), b);
         v.shape = mdl__make_seed(x, t->head, num, t->nargs);
     } else if (def) {
-        if (t->sel) mdl__fail(x, MDL_ERR_SYNTAX, "only primitive operators take [selectors]; %s is a name", t->head);
+        if (t->sel && !def->selector)
+            mdl__fail(x, MDL_ERR_SYNTAX, "only operators and names with a selector parameter take [selectors]; %s is a name without one", t->head);
         double *num = mdl__numbers(x, t, t->nargs, b);
         if (t->nargs != def->nparams)
             mdl__fail(x, MDL_ERR_ARITY, "%s takes %d number%s, not %d", t->head, def->nparams, def->nparams == 1 ? "" : "s", t->nargs);
-        mdl__bindings inner = {def->params, num, def->nparams};
+        const mdl__sel *passed = t->sel ? mdl__bind_selector(x, t->sel, b) : mdl__sel_new(x, S_ALL);
+        mdl__bindings inner = {def->params, num, def->nparams, def->selector, passed};
         v = mdl__eval_word(x, env, &def->word, &inner);
     } else if (t->head[0] >= 'a' && t->head[0] <= 'z' && !t->head[1]) {
         mdl__fail(x, MDL_ERR_NAME, "there is no operator %s", t->head);
@@ -2175,9 +2212,10 @@ static void mdl__run_line(mdl__program *pg, const char *line, int lineno, mdl_re
             if (mdl__reserved(st.name)) mdl__fail(x, MDL_ERR_NAME, "%s is reserved: it is an operator, a letter or a seed", st.name);
             for (int i = 0; i < pg->env.n; i++)
                 if (!strcmp(pg->env.items[i].name, st.name)) mdl__fail(x, MDL_ERR_NAME, "%s is already defined", st.name);
-            /* run it once now, so a broken definition is reported here */
-            if (!st.nparams) mdl__eval_word(x, &pg->env, &st.word, NULL);
-            mdl__def d = {st.name, st.params, st.nparams, st.word};
+            /* run it once now, so a broken definition is reported here; one with
+               parameters is checked when it is used */
+            if (!st.nparams && !st.selector) mdl__eval_word(x, &pg->env, &st.word, NULL);
+            mdl__def d = {st.name, st.params, st.nparams, st.word, st.selector};
             MDL__PUSH(pg->program, pg->env, d);
             break;
         }

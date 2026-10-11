@@ -51,14 +51,13 @@ make check                                       # every implementation against 
 ## Status
 
 Draft 1 of the spec, extended since with `mirror` (§5.4), the transforms
-`move`, `turn` and `stretch` (§5.5), and several bodies: `+`, `array` and
-`spin` (§3, §5.6). Two implementations, Racket and C, pass the same suite,
+`move`, `turn` and `stretch` (§5.5), several bodies: `+`, `array` and
+`spin` (§3, §5.6), and selector parameters (§6). Two implementations, Racket and C, pass the same suite,
 and the C one also passes it compiled to WebAssembly. They also agree on
 thousands of randomly generated words.
 
 Planned next:
 
-- selectors as parameters, so reusable steps can act on any part;
 - bindings for other languages, starting with Python.
 
 The DrRacket `#lang` and the studio from `local-ops` will be moved over on

@@ -12,13 +12,17 @@
 ;; ones follow in the order they are made; then unused vertices are dropped.
 ;; Faces the operator didn't rebuild keep their order, and the faces it made
 ;; follow.
-(require racket/list racket/set racket/math data/gvector
+(require racket/list racket/set racket/math racket/vector data/gvector
          "geom.rkt" "shape.rkt" "errors.rkt")
 (provide extrude lift inset kis bridge scale-region push merge flip mirror
-         move-by turn stretch
+         move-by turn stretch array spin
          dual ambo truncate gyro reflect
          needle zip join expand ortho meta bevel snub
-         current-skips made-by-last-step)
+         current-skips made-by-last-step MAX-FACES)
+
+;; Conway's letters multiply the number of faces, so a short word can ask for
+;; millions. Past this many, a step stops (run.rkt checks after each step).
+(define MAX-FACES 200000)
 
 ;; Operators that can't change some picked element skip it and count it here.
 (define current-skips (make-parameter (box 0)))
@@ -518,6 +522,40 @@
                   (for/list ([f kept])
                     (define corners (map (λ (v) (vector-ref copy v)) (face-corners f)))
                     (struct-copy face f [corners (cons (first corners) (reverse (rest corners)))] [step step])))))
+
+;; --- copies -------------------------------------------------------------------------------
+
+(define (copies s picked n what place)
+  ;; The shape and n - 1 copies of it, copy k with every point moved by
+  ;; (place k p). Copies keep their roles and labels and are made by this step.
+  (unless (for/and ([p picked]) p)
+    (fail 'precondition "~a copies the whole shape; leave out the selector" what))
+  (unless (and (>= n 1) (= n (floor n)))
+    (fail 'range "~a needs a whole number of copies, at least 1, not ~a" what n))
+  (when (> (* n (length (shape-faces s))) MAX-FACES)    ; checked before building them
+    (fail 'limit "~a makes ~a faces, more than the limit of ~a" what (inexact->exact (* n (length (shape-faces s)))) MAX-FACES))
+  (define step (add1 (shape-step s)))
+  (define nv (vector-length (shape-vertices s)))
+  (define ks (range 1 (inexact->exact n)))
+  (shape (apply vector-append (shape-vertices s)
+                (for/list ([k ks]) (for/vector ([p (shape-vertices s)]) (place k p))))
+         (append (shape-faces s)
+                 (for*/list ([k ks] [f (shape-faces s)])
+                   (struct-copy face f [corners (map (λ (v) (+ v (* k nv))) (face-corners f))] [step step])))
+         step))
+
+(define (array s picked [n 2.0] [x 1.0] [y 0.0] [z 0.0])
+  ;; n copies in a row, each moved (x, y, z) from the one before.
+  (copies s picked n "array" (λ (k p) (add p (list (* k x) (* k y) (* k z))))))
+
+(define (spin s picked [n 6.0])
+  ;; n copies turned evenly about the vertical axis through the origin.
+  (copies s picked n "spin"
+          (λ (k p)
+            (define a (/ (* 2 pi k) n))
+            (list (- (* (first p) (cos a)) (* (second p) (sin a)))
+                  (+ (* (first p) (sin a)) (* (second p) (cos a)))
+                  (third p)))))
 
 ;; Conway's other letters are his identities. The rightmost step acts on the
 ;; picked faces; each step to its left acts on the faces the one before made.

@@ -4,6 +4,7 @@
 ;;   house = k[top](0.9) x[+z](0.6) C      a definition
 ;;   storey(h, r) = x[inner](h) i[top](r)  a definition with parameters
 ;;   k[top] house                          a word to show
+;;   house + move(3) tree                  shapes side by side
 ;;   use "other.mdl"   gallery "g.svg"   export "f.obj" word
 ;;   ; a comment
 ;;
@@ -50,19 +51,23 @@
     [else (statement 'show #f '() (parse-word code) #f)]))
 
 (define (parse-word text)
-  ;; A list of tokens, at least one.
+  ;; The word's terms, the parts between top-level + signs: each a list of
+  ;; tokens, at least one.
   (define len (string-length text))
   (define (skip i) (or (for/first ([k (in-range i len)] #:unless (char-whitespace? (string-ref text k))) k) len))
-  (let loop ([i (skip 0)] [tokens '()])
+  (define (plus? i) (and (char=? (string-ref text i) #\+) (or (= (add1 i) len) (char-whitespace? (string-ref text (add1 i))))))
+  (define (term tokens)
+    (when (null? tokens) (fail 'syntax "a word needs at least a seed, like C, on each side of +"))
+    (reverse tokens))
+  (let loop ([i (skip 0)] [tokens '()] [terms '()])
     (cond
-      [(= i len)
-       (when (null? tokens) (fail 'syntax "a word needs at least a seed, like C"))
-       (reverse tokens)]
+      [(= i len) (reverse (cons (term tokens) terms))]
+      [(plus? i) (loop (skip (add1 i)) '() (cons (term tokens) terms))]
       [else
        (define-values (t end) (parse-token text i))
        (when (and (< end len) (not (char-whitespace? (string-ref text end))))
          (fail 'syntax "expected a space before ~s" (substring text end)))
-       (loop (skip end) (cons t tokens))])))
+       (loop (skip end) (cons t tokens) terms)])))
 
 (define (parse-token text start)
   (define head (regexp-match (pregexp (string-append "^" NAME)) text start))

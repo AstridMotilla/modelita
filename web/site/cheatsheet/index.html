@@ -54,6 +54,7 @@
           <tr><td><code>x(0.6)</code></td><td>numbers; any left out take the defaults</td></tr>
           <tr><td><code>x{roof}</code></td><td>label every face this step makes</td></tr>
           <tr><td><code>x^3</code></td><td>repeat the step</td></tr>
+          <tr><td><code>a + b</code></td><td>shapes side by side: several bodies</td></tr>
           <tr><td><code>name = word</code></td><td>a name for a shape, or for steps</td></tr>
           <tr><td><code>name(h) = word</code></td><td>steps with a parameter, used as <code>name(1.2)</code></td></tr>
           <tr><td><code>; note</code></td><td>a comment, to the end of the line</td></tr>
@@ -99,7 +100,13 @@
           <div class="op"><canvas data-word="turn[top](45) x[+z](2) C" aria-label="Turn"></canvas><div><code><a data-play="turn[top](45) x[+z](2) C">turn(z, y, x)</a></code><p>degrees about each axis, z first: counterclockwise from above</p></div></div>
           <div class="op"><canvas data-word="stretch[top](0.4, 0.4) x[+z](2) C" aria-label="Stretch"></canvas><div><code><a data-play="stretch[top](0.4, 0.4) x[+z](2) C">stretch(x, y, z)</a></code><p>along each axis; numbers left out are 1</p></div></div>
         </div>
-        <p class="small muted">Without a selector, the whole shape; with one, the picked faces' corners. <code>turn</code> and <code>stretch</code> act about each region's centre.</p>
+        <p class="small muted">Without a selector, the whole shape; with one, the picked faces' corners. <code>turn</code> and <code>stretch</code> act about each region's centre, and each body is a region of its own.</p>
+
+        <h2>Copies</h2>
+        <div class="ops">
+          <div class="op"><canvas data-focus="last" data-word="array(3, 2.5) k[top] x[+z] C" aria-label="Array"></canvas><div><code><a data-play="array(3, 2.5) k[top] x[+z] C">array(n, x, y, z)</a></code><p>n in a row, each moved (x, y, z); 2, 1, 0, 0</p></div></div>
+          <div class="op"><canvas data-focus="last" data-pitch="0.9" data-word="spin(6) move(3) k[top] x[+z] C" aria-label="Spin"></canvas><div><code><a data-play="spin(6) move(3) k[top] x[+z] C">spin(n)</a></code><p>n around the vertical through the origin; 6</p></div></div>
+        </div>
       </div>
 
       <div class="col">

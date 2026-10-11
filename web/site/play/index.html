@@ -56,6 +56,7 @@
             <tr><td>name = word</td><td>A name for a shape, or for steps if the word has no seed.</td></tr>
             <tr><td>name(h) = word</td><td>Steps with a number parameter, used as <code>name(1.2)</code>.</td></tr>
             <tr><td>step^3</td><td>Repeat a step.</td></tr>
+            <tr><td>a + b</td><td>Shapes side by side: one shape with several bodies.</td></tr>
             <tr><td>x[+z]{roof}</td><td>Label every face the step makes; faces built from them keep it.</td></tr>
           </table></div>
         </div>
@@ -82,6 +83,8 @@
             <tr><td>move(x, y, z)</td><td>shift the whole shape, or the picked faces' corners</td></tr>
             <tr><td>turn(z, y, x)</td><td>turn each region about its centre, in degrees</td></tr>
             <tr><td>stretch(x, y, z)</td><td>stretch each region about its centre</td></tr>
+            <tr><td>array(n, x, y, z)</td><td>n copies in a row, each moved (x, y, z)</td></tr>
+            <tr><td>spin(n)</td><td>n copies around the vertical through the origin</td></tr>
           </table></div>
         </div>
         <div>

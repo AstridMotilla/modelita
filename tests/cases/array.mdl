@@ -1,0 +1,7 @@
+; array: n copies in a row (SPEC.md §5.6)
+array(3, 2) C                                 ; three boxes along x
+array C                                       ; defaults: two, one apart (they touch, but stay two bodies)
+array(1) C                                    ; just the shape, one step later
+array(2, 0, 0, 3) k C                         ; copies keep their roles
+x[new](0.5) array(3, 3) C                     ; the copies are made by the step
+turn(30) array(3, 3) C(2, 1, 1)               ; each body turns about its own centre

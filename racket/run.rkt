@@ -2,7 +2,7 @@
 ;; What words mean (SPEC.md §3–§6). Every token is a value: a shape (a seed,
 ;; or a name for one) or an operator (a primitive, or a name for a word that
 ;; ends in one). Tokens side by side compose right to left.
-(require racket/list racket/file "shape.rkt" "errors.rkt" "ops.rkt" "seeds.rkt" "select.rkt" "parse.rkt")
+(require racket/list racket/file racket/vector "shape.rkt" "errors.rkt" "ops.rkt" "seeds.rkt" "select.rkt" "parse.rkt")
 (provide (struct-out operator) (struct-out result) operators
          run-program run-word MAX-FACES)
 
@@ -39,14 +39,13 @@
         (list "mirror" #f mirror '())
         (list "move" #f move-by '(0.0 0.0 0.0))
         (list "turn" #f turn '(0.0 0.0 0.0))
-        (list "stretch" #f stretch '(1.0 1.0 1.0))))
+        (list "stretch" #f stretch '(1.0 1.0 1.0))
+        (list "array" #f array '(2.0 1.0 0.0 0.0))
+        (list "spin" #f spin '(6.0))))
 
 (define operator-table
   (for*/hash ([o operators] [key (list (first o) (second o))] #:when key) (values key o)))
 
-;; Conway's letters multiply the number of faces, so a short word can ask for
-;; millions. Past this many, a step stops.
-(define MAX-FACES 200000)
 
 (define (step-value o selector numbers)
   (define-values (name proc) (values (first o) (third o)))
@@ -124,7 +123,27 @@
     [(shape? v) (fail 'kind "only operators can be repeated, and ~a is a shape" head)]
     [else (operator (λ (s) (for/fold ([s s]) ([k times]) ((operator-run v) s))))]))
 
-(define (word-value tokens env bindings)
+(define (word-value terms env bindings)
+  ;; One term is a word as before. Several are shapes side by side (SPEC.md §3).
+  (cond
+    [(null? (rest terms)) (term-value (first terms) env bindings)]
+    [else
+     (for/fold ([s #f] #:result s) ([tokens terms])
+       (define v (term-value tokens env bindings))
+       (unless (shape? v)
+         (fail 'kind "+ puts shapes side by side, and ~a is an operator" (token-text (last tokens))))
+       (if s (side-by-side s v) v))]))
+
+(define (side-by-side a b)
+  ;; a's vertices and faces, then b's. The step counter is the larger one.
+  (define offset (vector-length (shape-vertices a)))
+  (shape (vector-append (shape-vertices a) (shape-vertices b))
+         (append (shape-faces a)
+                 (for/list ([f (shape-faces b)])
+                   (struct-copy face f [corners (map (λ (v) (+ v offset)) (face-corners f))])))
+         (max (shape-step a) (shape-step b))))
+
+(define (term-value tokens env bindings)
   (define vs (for/list ([t tokens]) (token-value t env bindings)))
   (for ([v (drop-right vs 1)] [t tokens] #:unless (operator? v))
     (fail 'kind "~a is a shape, so it can only come last in a word" (token-head t)))

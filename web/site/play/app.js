@@ -166,9 +166,19 @@ function showStep(k, fitShape) {
   setShape(r, fitShape);
   const V = r.vertices.length / 3, F = r.faces.length;
   const E = r.faces.reduce((n, f) => n + f.length, 0) / 2;
-  const holes = (2 - (V - E + F)) / 2;
-  countsEl.innerHTML = `V ${V} · E ${E} · F ${F}<br>${holes ? `${holes} hole${holes === 1 ? "" : "s"}` : "no holes"}` +
+  const bodies = countBodies(r);
+  const holes = (2 * bodies - (V - E + F)) / 2;
+  countsEl.innerHTML = `V ${V} · E ${E} · F ${F}<br>` + (bodies > 1 ? `${bodies} bodies · ` : "") +
+    `${holes ? `${holes} hole${holes === 1 ? "" : "s"}` : "no holes"}` +
     (r.skipped ? `<br>${r.skipped} skipped` : "");
+}
+
+function countBodies(r) {
+  // Bodies are the pieces of faces connected through shared vertices (SPEC.md §1).
+  const parent = Array.from({ length: r.vertices.length / 3 }, (_, v) => v);
+  const find = v => { while (parent[v] !== v) v = parent[v] = parent[parent[v]]; return v; };
+  for (const f of r.faces) for (const v of f) parent[find(v)] = find(f[0]);
+  return new Set(parent.map((_, v) => find(v))).size;
 }
 
 // --- colours: Byrne's red, yellow and blue, from site.css, so the playground matches the site ---

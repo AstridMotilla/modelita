@@ -1,0 +1,7 @@
+; array and spin copy the whole shape, a whole number of times, within the limit
+array(0) C
+array(2.5) C
+array[top](3) C
+spin(3, 1) C
+array(1000000000) C
+spin(-2) C

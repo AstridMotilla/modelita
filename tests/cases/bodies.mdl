@@ -1,0 +1,11 @@
+; Several bodies: + puts shapes side by side (SPEC.md §1, §3)
+C + move(3) T                                 ; two bodies: the cube's vertices and faces, then the tetrahedron's
+house = k[top] x[+z] C
+yard = house{home} + move(3, 0, 0) P5{shed} + move(0, 3) I
+x[new](0.5) yard                              ; the step counter is the larger one: new is the house's tents
+move[shed](0, 0, 1) yard                      ; labels pick bodies
+turn(45) yard                                 ; each body is a region: each turns about its own centre
+pair = C{a} + move(3) C{b}
+h[(a&+x)|(b&-x)] pair                         ; bridging two bodies joins them into one
+h[(a&+x)|(b&-x)] C{a} + move(3) C{b}          ; + joins whole words: here h acts on the first term alone
+mirror[+x] C + move(-3) O                     ; mirror copies a body that doesn't touch the seam

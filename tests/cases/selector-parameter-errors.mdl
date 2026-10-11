@@ -1,0 +1,12 @@
+; Selector parameters' errors
+house = k[top] x[+z] C
+house[top]                                    ; a name without a selector parameter
+x(1)[top] C                                   ; still a syntax error to put [ ] after ( )
+bad[all] = x C                                ; all already means something in a selector
+bad2[top] = x C                               ; so does a role
+bad3[a](a) = x(a) C                           ; one name for the selector and a number
+bad4[s](h) = x(s) C
+bad4[+z](1)                                   ; the selector used as a number
+bad5[S] = x C                                 ; lowercase only
+storey[part](h) = x[part](h)
+storey[top](1, 2) C                           ; numbers are still counted

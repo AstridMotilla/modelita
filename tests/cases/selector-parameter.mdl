@@ -1,0 +1,15 @@
+; A selector parameter: a reusable step acts on the part it is given (SPEC.md §6)
+storey[part](h) = x[new&inner](h) i[part](0.3)
+storey[top](1.2) x[+z] C                      ; on the lid: inset it, then raise what the inset made
+storey(1.2) x[+z] C                           ; no selector: all
+storey[+x](0.5) C                             ; on the cube's +x face
+storey[part&top](1) x[+z] C                   ; a name used as a selector picks that label: none here, so nothing
+roof[p] = k[p](0.8)
+tower[lot] = roof[lot&top] storey[lot&top](1)^2 x[lot](1){tower}
+tower[+z] C                                   ; names with selector parameters inside names
+floor[p] = storey[p|-z](0.5)
+floor[top] x[+z|-z] C                         ; a passed selector combined with another
+labelled[roof] = x[roof](0.5) x[+z]{roof} C   ; the parameter hides the label of the same name
+labelled[+x]
+twice[s](h) = x[s](h) x[s](h)
+twice[top](0.4) x[+z] C                       ; evaluated at each step: the second x picks the first one's lid

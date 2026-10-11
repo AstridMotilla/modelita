@@ -1,0 +1,24 @@
+line 3
+error syntax
+end
+line 4
+error syntax
+end
+line 5
+error name
+end
+line 6
+error name
+end
+line 7
+error syntax
+end
+line 9
+error name
+end
+line 10
+error syntax
+end
+line 12
+error arity
+end

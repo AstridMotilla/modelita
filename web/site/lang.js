@@ -61,21 +61,22 @@ turn(30) array(4, 3) house                ; each body turns where it stands
 yard = house{home} + move(2.5, 1, -0.6) tree{tree}
 move[tree](0, 0, 1) yard                  ; labels pick bodies`,
   "City": `; A small city, in one body. Lay out one block of four lots, mirror it
-; into a grid of sixteen, then build: every lot of a kind is built by the
-; same steps, because mirror's copies keep their labels.
+; into a grid of sixteen, then build: each kind of building is a step that
+; takes the lots it goes on as a selector.
 
 ; Four lots on a slab: the seed's top, and the tops of three extensions.
 block = lift[+y](2){north} x[+x](2){east} C(2, 2, 0.2)
 grid = mirror[-y] mirror[-x] block
 lots = i[+z](0.2) grid                    ; each lot's rim is street
 
-; What goes on each kind of lot
-houses  = k[house&top](0.5) x[inner&north&!east](0.6){house}
-offices = x[office&inner](0.4) i[office&top](0.15) x[inner&east&!north](1.4){office}
-towers  = k[tower&top](0.4) x[tower&inner](1) i[tower&top](0.2) x[tower&inner](1.2) i[tower&top](0.15) x[inner&north&east](2.2){tower}
-parks   = k[inner&!north&!east](0.15)
+; Buildings. new picks what the step before made, so each builds on itself.
+storey[s](h) = x[new&inner](h) i[s](0.15)
+house[lot]  = k[new&top](0.5) x[lot](0.6)
+office[lot] = storey[new&top](0.4) x[lot](1.4)
+tower[lot]  = k[new&top](0.4) storey[new&top](1) storey[new&top](1.2) x[lot](2.2)
+park[lot]   = k[lot](0.15)
 
-city = parks towers offices houses lots
+city = park[inner&!north&!east] tower[inner&north&east] office[inner&east&!north] house[inner&north&!east] lots
 city`,
   "City 2": `; A free city: separate buildings, placed with move, array and spin.
 ground = C(14, 14, 0.2)
@@ -91,7 +92,7 @@ trees = array(6, 0, 2) move(5.8, -5, 0.5) tree           ; a line of trees
 city = ground + spin(2) row + ring + centre + spin(2) trees
 city`,
 };
-export const FIRST_LINE = { "Tower": 6, "City": 16, "City 2": 12 };
+export const FIRST_LINE = { "Tower": 6, "City": 17, "City 2": 12 };
 
 // --- reading lines (only to know what each line is; the engine does the rest) ------------
 export function classify(line) {
@@ -100,8 +101,9 @@ export function classify(line) {
   if (/^\s*(use|gallery)\b/.test(code)) return { kind: "directive" };
   let m = code.match(/^\s*export\s+"[^"]*"(.*)$/);
   if (m) return { kind: "show", word: m[1].trim() };
-  m = code.match(/^\s*([A-Za-z][A-Za-z0-9_-]*)\s*(?:\(([^)]*)\))?\s*=(.*)$/);
-  if (m) return { kind: "define", name: m[1], params: m[2] && m[2].trim() ? m[2].split(",").map(s => s.trim()) : [], word: m[3].trim() };
+  m = code.match(/^\s*([A-Za-z][A-Za-z0-9_-]*)\s*(?:\[([^\]]*)\])?\s*(?:\(([^)]*)\))?\s*=(.*)$/);
+  if (m) return { kind: "define", name: m[1], selector: m[2] ? m[2].trim() : null,
+                  params: m[3] && m[3].trim() ? m[3].split(",").map(s => s.trim()) : [], word: m[4].trim() };
   return { kind: "show", word: code.trim() };
 }
 

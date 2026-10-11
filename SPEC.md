@@ -167,8 +167,9 @@ and every part but the head is optional:
 
 - **head**: an operator's name or letter (§5), a seed (§2), or a defined
   name (§6);
-- **`[selector]`**: which faces the operator acts on (§7). Only primitive
-  operators take one; without it, they act on `all` faces;
+- **`[selector]`**: which faces the operator acts on (§7). Primitive
+  operators take one, and so do names defined with a selector parameter
+  (§6); without it, they act on `all` faces;
 - **`(numbers)`**: comma-separated numbers or parameter names (§6). A
   primitive operator or seed may be given fewer numbers than it takes, and
   the rest use the defaults. A defined name with parameters must be given
@@ -551,6 +552,7 @@ and is made by this step.
 ```
 name = word
 name(p₁, p₂, …) = word
+name[s](p₁, p₂, …) = word
 ```
 
 A definition gives a word a name. Names match `[A-Za-z][A-Za-z0-9_-]*`.
@@ -564,10 +566,36 @@ It is a `name` error if the name is:
 A name can be used from the next line on.
 
 A definition without parameters is checked when it is defined, so an error
-in it is reported on its own line. Parameters are numbers. A parameter's
-name may appear wherever a number may in the word (an operator's or seed's
-numbers, or another name's arguments). A definition is evaluated afresh
-each time it is used.
+in it is reported on its own line; one with parameters is checked each time
+it is used. A definition is evaluated afresh each time it is used.
+
+**Number parameters** are written in `( )`. A parameter's name may appear
+wherever a number may in the word (an operator's or seed's numbers, or
+another name's arguments). Using one as a selector picks it as a label.
+
+**A selector parameter** is written in `[ ]` after the name, and a
+definition has at most one. It lets a reusable step act on whatever part it
+is given, the way a primitive operator does:
+
+```
+storey[part](h) = x[new&inner](h) i[part](0.3)
+storey[top](1.2) x[+z] C            ; on the lid: inset it, raise the inset
+storey(1.2) x[+z] C                 ; no selector: all
+```
+
+- Inside the word, the parameter's name may appear wherever a selector name
+  may, alone or combined (`[part]`, `[part&side]`, `[~part]`). It stands for
+  the selector passed, as if that were written there in parentheses, and
+  hides a label of the same name.
+- The selector is passed in the name's `[ ]` when it is used, and is `all`
+  if left out. A selector passed inside a definition may use that
+  definition's own selector parameter: `floor[p] = storey[p&side](1)`.
+- Each step evaluates its selector when it runs, against the shape at that
+  moment (§7), so a later step in the word sees the faces earlier ones made.
+- The parameter's name follows the rules for labels (§4): a `name` error if
+  it is `all`, `new`, a role or `n` + digits. Using it as a number is a
+  `name` error, and giving a number parameter the same name is a `syntax`
+  error.
 
 ## 7. Selectors
 
@@ -622,7 +650,7 @@ When a statement fails, it produces an error with one of these categories:
 
 | Category | When |
 |---|---|
-| `syntax` | the line can't be read, or a selector is given to something other than a primitive operator |
+| `syntax` | the line can't be read, or a selector is given to something other than a primitive operator or a name with a selector parameter |
 | `name` | an undefined name, a reserved or duplicate definition, a missing parameter, or a forbidden label |
 | `kind` | a shape that isn't last in its word, a repeated shape, or an operator joined with `+` |
 | `arity` | too many numbers, or a defined name given the wrong number of arguments |
@@ -658,6 +686,6 @@ tolerance of 1e-9; everything else must match exactly.
 - unions and other booleans: bodies may overlap, but are never merged;
 - subdivision and curves;
 - turning several bodies about one centre;
-- selectors as parameters.
+- more than one selector parameter.
 
 The likely next addition is one subdivision operator.

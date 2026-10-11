@@ -20,6 +20,8 @@ check(JSON.stringify(tokenize("k[top](0.8) storey(1.2, 3)^3  x[a | b]{roof} C"))
 }
 check(classify("storey(h, r) = x(h) ; c").kind === "define" && classify("storey(h, r) = x(h)").params.length === 2, "classify a definition");
 check(classify('export "a.obj" x C').word === "x C", "classify an export");
+check(classify("storey[part](h) = x[part](h)").selector === "part" && classify("storey[part](h) = x[part](h)").params.length === 1,
+      "classify a definition with a selector parameter");
 check(classify("  ; only a comment").kind === "blank", "classify a comment");
 
 let words = 0;
@@ -29,7 +31,7 @@ for (const [name, text] of Object.entries(EXAMPLES)) {
   const lines = text.split("\n");
   lines.forEach((line, i) => {
     const c = classify(line);
-    if (c.kind !== "show" && !(c.kind === "define" && !c.params.length)) return;
+    if (c.kind !== "show" && !(c.kind === "define" && !c.params.length && !c.selector)) return;
     const base = lines.slice(0, i).map(l => (classify(l).kind === "show" ? "" : l));
     let steps = buildSteps(run, base, tokenize(c.word), "");
     if (steps.at(-1).result.kind === "operator") steps = buildSteps(run, base, tokenize(c.word), " x[+z] C");

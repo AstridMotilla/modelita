@@ -106,8 +106,11 @@ function updateFocus(force) {
   state.focusLine = index;
   const c = classify(lines[index] ?? "");
   if (c.kind === "blank" || c.kind === "directive") return showSteps(null, [], "Put the cursor on a word to see its shape.");
-  if (c.kind === "define" && c.params.length)
-    return showSteps(c, [], `${c.name} takes ${c.params.length === 1 ? "a number" : "numbers"}: use it in a word, like ${c.name}(${c.params.map(() => "1").join(", ")}) ${PREVIEW_SEED}`);
+  if (c.kind === "define" && (c.params.length || c.selector)) {
+    const takes = [c.selector ? "a selector" : "", c.params.length === 1 ? "a number" : c.params.length ? "numbers" : ""].filter(Boolean).join(" and ");
+    const use = c.name + (c.selector ? "[top]" : "") + (c.params.length ? `(${c.params.map(() => "1").join(", ")})` : "");
+    return showSteps(c, [], `${c.name} takes ${takes}: use it in a word, like ${use} ${PREVIEW_SEED}`);
+  }
 
   // Everything above this line, without the words it shows, then each step of this word.
   const base = lines.slice(0, index).map(l => (classify(l).kind === "show" ? "" : l));

@@ -2,7 +2,7 @@
 ;; What words mean (SPEC.md §3–§6). Every token is a value: a shape (a seed,
 ;; or a name for one) or an operator (a primitive, or a name for a word that
 ;; ends in one). Tokens side by side compose right to left.
-(require racket/list racket/file racket/vector "shape.rkt" "errors.rkt" "ops.rkt" "seeds.rkt" "select.rkt" "parse.rkt")
+(require racket/list racket/file racket/vector racket/match "shape.rkt" "errors.rkt" "ops.rkt" "seeds.rkt" "select.rkt" "parse.rkt")
 (provide (struct-out operator) (struct-out result) operators
          run-program run-word MAX-FACES)
 
@@ -61,8 +61,21 @@
 
 ;; --- tokens and words --------------------------------------------------------------
 
-;; env: name -> (cons params word). Definitions are run again each time they
-;; are used: words are pure, and this keeps each word's skip count its own.
+;; env: name -> definition. Definitions are run again each time they are
+;; used: words are pure, and this keeps each word's skip count its own.
+;; bindings: parameter -> a number, or a passed selector (SPEC.md §6).
+(struct definition (params selector word))
+(struct passed (selector))
+
+(define (bind-selector sel bindings)
+  ;; sel with every selector parameter replaced by the selector passed for it.
+  (match sel
+    [`(tag ,t) (match (hash-ref bindings t #f) [(passed s) s] [_ sel])]
+    [`(and ,a ,b) `(and ,(bind-selector a bindings) ,(bind-selector b bindings))]
+    [`(or ,a ,b) `(or ,(bind-selector a bindings) ,(bind-selector b bindings))]
+    [`(not ,a) `(not ,(bind-selector a bindings))]
+    [`(near ,a) `(near ,(bind-selector a bindings))]
+    [_ sel]))
 
 (define (token-value t env bindings)
   (define head (token-head t))
@@ -72,30 +85,37 @@
       (fail 'arity "~a takes ~a" what
             (case most [(0) "no numbers"] [(1) "at most one number"] [else (format "at most ~a numbers" most)])))
     (for/list ([a args])
-      (if (symbol? a)
-          (hash-ref bindings a (λ () (fail 'name "~a isn't a parameter here" a)))
-          a)))
+      (cond
+        [(not (symbol? a)) a]
+        [(hash-ref bindings a #f) => (λ (v) (if (real? v) v (fail 'name "~a is a selector, not a number" a)))]
+        [else (fail 'name "~a isn't a parameter here" a)])))
   (define (no-selector what)
-    (when (token-selector t) (fail 'syntax "only primitive operators take [selectors]; ~a is ~a" head what)))
+    (when (token-selector t)
+      (fail 'syntax "only operators and names with a selector parameter take [selectors]; ~a is ~a" head what)))
+  (define selector (and (token-selector t) (bind-selector (token-selector t) bindings)))
   (define value
     (cond
       [(hash-ref operator-table head #f)
        => (λ (o)
             (define given (numbers (length (fourth o)) head))
-            (step-value o (token-selector t) (append given (drop (fourth o) (length given)))))]
+            (step-value o selector (append given (drop (fourth o) (length given)))))]
       [(seed-for head)
        => (λ (sd)
             (no-selector "a seed")
             (apply (cdr sd) (numbers (car sd) head)))]
       [(hash-ref env head #f)
-       => (λ (definition)
-            (no-selector "a name")
-            (define params (car definition))
+       => (λ (d)
+            (unless (definition-selector d) (no-selector "a name without one"))
+            (define params (definition-params d))
             (define args (if (token-args t) (numbers (length (token-args t)) head) '()))
             (unless (= (length args) (length params))
               (fail 'arity "~a takes ~a number~a, not ~a" head (length params)
                     (if (= 1 (length params)) "" "s") (length args)))
-            (word-value (cdr definition) env (for/hash ([p params] [a args]) (values p a))))]
+            (define inner (for/hash ([p params] [a args]) (values p a)))
+            (word-value (definition-word d) env
+                        (if (definition-selector d)
+                            (hash-set inner (definition-selector d) (passed (or selector 'all)))
+                            inner)))]
       [(regexp-match? #px"^[a-z]$" head) (fail 'name "there is no operator ~a" head)]
       [else (fail 'name "~a isn't defined above this line" head)]))
   (repeat (labelled value (token-label t)) (token-count t) head))
@@ -179,9 +199,11 @@
               (define name (statement-name st))
               (when (reserved? name) (fail 'name "~a is reserved: it is an operator, a letter or a seed" name))
               (when (hash-has-key? env name) (fail 'name "~a is already defined" name))
-              ;; Run it once now, so a broken definition is reported here.
-              (unless (pair? (statement-params st)) (word-value (statement-word st) env (hash)))
-              (hash-set! env name (cons (statement-params st) (statement-word st)))
+              ;; Run it once now, so a broken definition is reported here; one
+              ;; with parameters is checked when it is used.
+              (unless (or (pair? (statement-params st)) (statement-selector st))
+                (word-value (statement-word st) env (hash)))
+              (hash-set! env name (statement->definition st))
               (fine st #f)]
              [(show export) (fine st (word-value (statement-word st) env (hash)))]
              [(use)
@@ -197,7 +219,10 @@
   (for ([line-text (regexp-split #rx"\r?\n" text)])
     (define st (parse-line line-text))
     (when (and st (eq? (statement-kind st) 'define))
-      (hash-set! env (statement-name st) (cons (statement-params st) (statement-word st))))))
+      (hash-set! env (statement-name st) (statement->definition st)))))
+
+(define (statement->definition st)
+  (definition (statement-params st) (statement-selector st) (statement-word st)))
 
 (define (path-only* p)
   (define-values (dir name must-be-dir?) (split-path (if (string? p) (string->path p) p)))
